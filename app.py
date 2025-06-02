@@ -7,42 +7,38 @@ import re
 import requests
 from PIL import Image
 from io import BytesIO
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image as RLImage, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Image as RLImage, Spacer, Table, TableStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 import os
+import json
 
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDS_FILE = "credentials.json"
 SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
 
-# Connect to Google Sheets
-def connect_gsheets():
-    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPE)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID)
-    return sheet
+# Read credentials from Streamlit Secrets
+creds_dict = json.loads(st.secrets["gcp_service_account"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+client = gspread.authorize(creds)
+sheet = client.open_by_key(SPREADSHEET_ID)
 
 # Load Inventory and Sales
 @st.cache_data(ttl=60)
 def load_data():
-    sheet = connect_gsheets()
     inventory = pd.DataFrame(sheet.worksheet("Inventory").get_all_records())
     sales = pd.DataFrame(sheet.worksheet("Sales").get_all_records())
-    return sheet, inventory, sales
+    return inventory, sales
 
 # Save Inventory
 def save_inventory(df):
-    sheet = connect_gsheets()
     worksheet = sheet.worksheet("Inventory")
     worksheet.clear()
     worksheet.update([df.columns.values.tolist()] + df.values.tolist())
 
 # Append Sale
 def append_sale(sale_record):
-    sheet = connect_gsheets()
     worksheet = sheet.worksheet("Sales")
     worksheet.append_row(sale_record)
 
@@ -55,7 +51,7 @@ def convert_drive_link(url):
         return f"https://drive.google.com/uc?export=view&id={file_id}"
     return url
 
-# Download image safely (supports jpg, png, webp)
+# Download image safely
 def download_image(url):
     try:
         response = requests.get(url, timeout=10)
@@ -69,8 +65,6 @@ def download_image(url):
 def generate_catalog_pdf(df, filename="catalog.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=A4)
     story = []
-    styles = getSampleStyleSheet()
-
     for idx, row in df.iterrows():
         img_url = row.get("Image URL", "")
         img_url = convert_drive_link(img_url)
@@ -81,7 +75,6 @@ def generate_catalog_pdf(df, filename="catalog.pdf"):
         img_buffer.seek(0)
 
         rl_img = RLImage(img_buffer, width=150, height=150)
-
         data = [
             ["Item Name:", row.get("Item Name", "")],
             ["Category:", row.get("Category", "")],
@@ -109,7 +102,7 @@ st.title("💼 Inventory + POS + Catalog + PDF Export")
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
 choice = st.sidebar.selectbox("Menu", menu)
 
-sheet, inventory_df, sales_df = load_data()
+inventory_df, sales_df = load_data()
 
 if choice == "Add Inventory Item":
     st.header("Add New Inventory Item")
@@ -200,7 +193,7 @@ elif choice == "Statistics":
     st.metric("Total Sales Revenue", f"${total_sales_value:,.2f}")
 
 elif choice == "View Catalog":
-    st.header("📖 Product Catalog")
+    st.header("Product Catalog")
     if inventory_df.empty:
         st.warning("No items in inventory!")
     else:
@@ -220,9 +213,9 @@ elif choice == "View Catalog":
                 st.write(f"Quantity: {row['Quantity']}")
         
         st.write("\n---\n")
-        if st.button("📄 Export Catalog PDF"):
+        if st.button("Export Catalog PDF"):
             pdf_filename = generate_catalog_pdf(inventory_df)
             with open(pdf_filename, "rb") as f:
-                st.download_button("Download Catalog PDF", f, file_name="catalog.pdf", mime="application/pdf")
+                st.download_button("Download PDF", f, file_name="catalog.pdf", mime="application/pdf")
             if os.path.exists(pdf_filename):
                 os.remove(pdf_filename)
