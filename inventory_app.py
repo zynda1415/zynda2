@@ -61,7 +61,7 @@ def download_image(url):
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
-        img = img.convert("RGB")
+        img = Image.open(BytesIO(response.content)).convert("RGB")
         return img
     except:
         return Image.new("RGB", (300, 300), color=(230, 230, 230))
