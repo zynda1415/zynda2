@@ -3,16 +3,17 @@ import pandas as pd
 import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import json
 
 # Google Sheets Setup
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'service_account.json'  # Upload your service account file
 SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 
-# Authenticate with Google Sheets
+# Authenticate with Google Sheets using Streamlit Secrets
 def connect_gsheet():
-    credentials = Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+    service_account_info = json.loads(st.secrets["gcp_service_account"])
+    credentials = Credentials.from_service_account_info(
+        service_account_info,
         scopes=SCOPES
     )
     gc = gspread.authorize(credentials)
@@ -60,7 +61,7 @@ def update_inventory_after_sale(item_name, quantity_sold):
     save_inventory(df)
 
 # Streamlit App
-st.title("💼 Inventory + POS Management System (Google Sheets v5)")
+st.title("💼 Inventory + POS Management System (Google Sheets v5.1)")
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics"]
 choice = st.sidebar.selectbox("Menu", menu)
 
