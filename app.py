@@ -1,22 +1,116 @@
 import streamlit as st
-import datetime
 import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+import datetime
+import re
+import requests
+from PIL import Image
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image as RLImage, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
 import os
 
-from database.gsheets import load_data, save_inventory, append_sale
-from export.pdf_generator import generate_catalog_pdf
-from utils.drive_converter import convert_drive_link
+# Google Sheets Setup
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
+CREDS_FILE = "credentials.json"
+SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
 
-# Load data from Google Sheets
-sheet, inventory_df, sales_df = load_data()
+# Connect to Google Sheets
+def connect_gsheets():
+    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPE)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SPREADSHEET_ID)
+    return sheet
 
-# Streamlit App UI
+# Load Inventory and Sales
+@st.cache_data(ttl=60)
+def load_data():
+    sheet = connect_gsheets()
+    inventory = pd.DataFrame(sheet.worksheet("Inventory").get_all_records())
+    sales = pd.DataFrame(sheet.worksheet("Sales").get_all_records())
+    return sheet, inventory, sales
+
+# Save Inventory
+def save_inventory(df):
+    sheet = connect_gsheets()
+    worksheet = sheet.worksheet("Inventory")
+    worksheet.clear()
+    worksheet.update([df.columns.values.tolist()] + df.values.tolist())
+
+# Append Sale
+def append_sale(sale_record):
+    sheet = connect_gsheets()
+    worksheet = sheet.worksheet("Sales")
+    worksheet.append_row(sale_record)
+
+# Convert Google Drive link to direct image link
+def convert_drive_link(url):
+    pattern = r"https://drive\.google\.com/file/d/(.*?)/"
+    match = re.search(pattern, url)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/uc?export=view&id={file_id}"
+    return url
+
+# Download image safely (supports webp, jpg, png)
+def download_image(url):
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        img = Image.open(BytesIO(response.content)).convert("RGB")
+        return img
+    except:
+        return Image.new("RGB", (300, 300), color=(230, 230, 230))
+
+# Generate PDF Catalog
+def generate_catalog_pdf(df, filename="catalog.pdf"):
+    doc = SimpleDocTemplate(filename, pagesize=A4)
+    story = []
+    styles = getSampleStyleSheet()
+
+    for idx, row in df.iterrows():
+        img_url = row.get("Image URL", "")
+        img_url = convert_drive_link(img_url)
+        img = download_image(img_url)
+        img.thumbnail((200, 200))
+        img_buffer = BytesIO()
+        img.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+
+        rl_img = RLImage(img_buffer, width=150, height=150)
+
+        data = [
+            ["Item Name:", row.get("Item Name", "")],
+            ["Category:", row.get("Category", "")],
+            ["Price:", f"${row.get('Sale Price', 0)}"],
+            ["Quantity:", row.get("Quantity", "")],
+            ["Barcode:", row.get("Barcode", "N/A")],
+        ]
+        table = Table(data, colWidths=[80, 300])
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey)
+        ]))
+
+        story.append(rl_img)
+        story.append(Spacer(1, 12))
+        story.append(table)
+        story.append(Spacer(1, 24))
+
+    doc.build(story)
+    return filename
+
+# Streamlit App
 st.title("💼 Inventory + POS (Google Sheets) + Catalog + PDF Export")
-
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
 choice = st.sidebar.selectbox("Menu", menu)
 
-# Add Inventory
+sheet, inventory_df, sales_df = load_data()
+
 if choice == "Add Inventory Item":
     st.header("Add New Inventory Item")
     with st.form("Add Form"):
@@ -29,7 +123,7 @@ if choice == "Add Inventory Item":
         notes = st.text_area("Notes")
         image_url = st.text_input("Image URL (optional)")
         submit = st.form_submit_button("Add Item")
-
+        
         if submit:
             new_row = pd.DataFrame([{
                 "Item Name": item_name,
@@ -45,7 +139,6 @@ if choice == "Add Inventory Item":
             save_inventory(inventory_df)
             st.success("Item added successfully!")
 
-# POS
 elif choice == "Point of Sale (POS)":
     st.header("Point of Sale")
     if inventory_df.empty:
@@ -57,12 +150,12 @@ elif choice == "Point of Sale (POS)":
         quantity_sold = st.number_input("Quantity to sell", min_value=1, max_value=available_stock, step=1)
         total_price = quantity_sold * float(selected_item['Sale Price'])
         st.write(f"Total Price: ${total_price:.2f}")
-
+        
         if st.button("Confirm Sale"):
             idx = inventory_df[inventory_df['Item Name'] == item_selected].index[0]
             inventory_df.at[idx, 'Quantity'] -= quantity_sold
             save_inventory(inventory_df)
-
+            
             sale_record = [
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 item_selected,
@@ -71,10 +164,9 @@ elif choice == "Point of Sale (POS)":
                 total_price
             ]
             append_sale(sale_record)
-
+            
             st.success("Sale recorded and inventory updated!")
 
-# View Inventory
 elif choice == "View Inventory":
     st.header("Inventory List")
     search_query = st.text_input("Search Inventory")
@@ -83,15 +175,12 @@ elif choice == "View Inventory":
         df_display = df_display[df_display.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
     st.dataframe(df_display)
 
-# Sales History
 elif choice == "Sales History":
     st.header("Sales History")
     st.dataframe(sales_df)
 
-# Statistics
 elif choice == "Statistics":
     st.header("Statistics Summary")
-
     inventory_df["Quantity"] = inventory_df["Quantity"].astype(float)
     inventory_df["Purchase Price"] = inventory_df["Purchase Price"].astype(float)
     inventory_df["Sale Price"] = inventory_df["Sale Price"].astype(float)
@@ -110,10 +199,8 @@ elif choice == "Statistics":
     st.subheader("Sales Stats")
     st.metric("Total Sales Revenue", f"${total_sales_value:,.2f}")
 
-# View Catalog + PDF Export
 elif choice == "View Catalog":
     st.header("📖 Product Catalog")
-
     if inventory_df.empty:
         st.warning("No items in inventory!")
     else:
