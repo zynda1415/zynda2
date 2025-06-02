@@ -35,8 +35,10 @@ def save_data(df):
     sheet = connect_gsheets()
     sheet.clear()
     sheet.append_row(COLUMNS)
-    for row in df.itertuples(index=False):
-        sheet.append_row(list(row))
+    values = df.astype(str).values.tolist()  # <-- The magic fix
+    for row in values:
+        sheet.append_row(row)
+
 
 # Add a new item
 def add_item(new_item):
