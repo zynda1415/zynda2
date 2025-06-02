@@ -1,86 +1,31 @@
-# Sidebar menu
+import streamlit as st
+import pandas as pd
+import os
+
+# CSV file to store inventory data
+CSV_FILE = 'inventory.csv'
+
+# Define inventory columns
+COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes']
+
+# Load data from CSV
+@st.cache_data(ttl=60)
+def load_data():
+    if os.path.exists(CSV_FILE):
+        df = pd.read_csv(CSV_FILE)
+    else:
+        df = pd.DataFrame(columns=COLUMNS)
+        df.to_csv(CSV_FILE, index=False)
+    return df
+
+# Save data to CSV
+def save_data(df):
+    df.to_csv(CSV_FILE, index=False)
+
+# Define your add_item, edit_item, delete_item, show_statistics here (same as previous code)
+
+# Now load the data after defining functions:
+df = load_data()
+
+# Now build the sidebar menu safely
 menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics"])
-
-if menu == "View Inventory":
-    # Existing View Inventory code...
-    st.subheader("Inventory List")
-    # (rest of your existing code)
-
-elif menu == "Item":
-    # Sub-menu for Item management
-    item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
-
-    if item_action == "Add Item":
-        st.subheader("Add New Item")
-        # (your existing Add Item code...)
-
-        with st.form("add_form"):
-            item_name = st.text_input("Item Name")
-            category = st.text_input("Category")
-            quantity = st.number_input("Quantity", min_value=0, step=1)
-            purchase_price = st.number_input("Purchase Price", min_value=0.0, step=0.01)
-            sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
-            supplier = st.text_input("Supplier")
-            notes = st.text_area("Notes")
-
-            submitted = st.form_submit_button("Add Item")
-
-            if submitted:
-                new_item = {
-                    'Item Name': item_name,
-                    'Category': category,
-                    'Quantity': quantity,
-                    'Purchase Price': purchase_price,
-                    'Sale Price': sale_price,
-                    'Supplier': supplier,
-                    'Notes': notes
-                }
-                add_item(new_item)
-                st.success("Item added successfully!")
-
-    elif item_action == "Edit Item":
-        st.subheader("Edit Existing Item")
-        df = load_data()
-        if df.empty:
-            st.warning("No items to edit.")
-        else:
-            item_to_edit = st.selectbox("Select Item to Edit", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
-            selected_row = df.loc[item_to_edit]
-
-            with st.form("edit_form"):
-                item_name = st.text_input("Item Name", value=selected_row['Item Name'])
-                category = st.text_input("Category", value=selected_row['Category'])
-                quantity = st.number_input("Quantity", min_value=0, step=1, value=int(selected_row['Quantity']))
-                purchase_price = st.number_input("Purchase Price", min_value=0.0, step=0.01, value=float(selected_row['Purchase Price']))
-                sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
-                supplier = st.text_input("Supplier", value=selected_row['Supplier'])
-                notes = st.text_area("Notes", value=selected_row['Notes'])
-
-                submitted = st.form_submit_button("Save Changes")
-
-                if submitted:
-                    updated_item = {
-                        'Item Name': item_name,
-                        'Category': category,
-                        'Quantity': quantity,
-                        'Purchase Price': purchase_price,
-                        'Sale Price': sale_price,
-                        'Supplier': supplier,
-                        'Notes': notes
-                    }
-                    edit_item(item_to_edit, updated_item)
-                    st.success("Item updated successfully!")
-
-    elif item_action == "Delete Item":
-        st.subheader("Delete Item")
-        df = load_data()
-        if df.empty:
-            st.warning("No items to delete.")
-        else:
-            item_to_delete = st.selectbox("Select Item to Delete", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
-            if st.button("Delete"):
-                delete_item(item_to_delete)
-                st.success("Item deleted successfully!")
-
-elif menu == "Statistics":
-    show_statistics()
