@@ -4,6 +4,14 @@ import gspread
 from google.oauth2.service_account import Credentials
 import datetime
 import re
+import requests
+from PIL import Image
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image as RLImage, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+import os
 
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -47,9 +55,59 @@ def convert_drive_link(url):
         return f"https://drive.google.com/uc?export=view&id={file_id}"
     return url
 
+# Download image safely
+def download_image(url):
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        img = Image.open(BytesIO(response.content))
+        img = img.convert("RGB")
+        return img
+    except:
+        return Image.new("RGB", (300, 300), color=(230, 230, 230))
+
+# Generate PDF Catalog
+def generate_catalog_pdf(df, filename="catalog.pdf"):
+    doc = SimpleDocTemplate(filename, pagesize=A4)
+    story = []
+    styles = getSampleStyleSheet()
+
+    for idx, row in df.iterrows():
+        img_url = row.get("Image URL", "")
+        img_url = convert_drive_link(img_url)
+        img = download_image(img_url)
+        img.thumbnail((200, 200))
+        img_buffer = BytesIO()
+        img.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+
+        rl_img = RLImage(img_buffer, width=150, height=150)
+
+        data = [
+            ["Item Name:", row.get("Item Name", "")],
+            ["Category:", row.get("Category", "")],
+            ["Price:", f"${row.get('Sale Price', 0)}"],
+            ["Quantity:", row.get("Quantity", "")],
+            ["Barcode:", row.get("Barcode", "N/A")],
+        ]
+        table = Table(data, colWidths=[80, 300])
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+            ("BOX", (0, 0), (-1, -1), 1, colors.black),
+            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey)
+        ]))
+
+        story.append(rl_img)
+        story.append(Spacer(1, 12))
+        story.append(table)
+        story.append(Spacer(1, 24))
+
+    doc.build(story)
+    return filename
+
 # Streamlit App
-st.title("💼 Inventory + POS (Google Sheets) + Catalog")
-menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
+st.title("💼 Inventory + POS (Google Sheets) + Catalog + PDF Export")
+menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog", "Export Catalog PDF"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 sheet, inventory_df, sales_df = load_data()
@@ -124,11 +182,10 @@ elif choice == "Sales History":
 
 elif choice == "Statistics":
     st.header("Statistics Summary")
-    
     inventory_df["Quantity"] = inventory_df["Quantity"].astype(float)
     inventory_df["Purchase Price"] = inventory_df["Purchase Price"].astype(float)
     inventory_df["Sale Price"] = inventory_df["Sale Price"].astype(float)
-    
+
     total_inventory_items = inventory_df.shape[0]
     total_stock_quantity = inventory_df['Quantity'].sum()
     total_stock_value = (inventory_df['Quantity'] * inventory_df['Purchase Price']).sum()
@@ -140,13 +197,11 @@ elif choice == "Statistics":
     st.metric("Total Stock Quantity", total_stock_quantity)
     st.metric("Total Stock Purchase Value", f"${total_stock_value:,.2f}")
     st.metric("Potential Sales Value", f"${potential_sales_value:,.2f}")
-
     st.subheader("Sales Stats")
     st.metric("Total Sales Revenue", f"${total_sales_value:,.2f}")
 
 elif choice == "View Catalog":
     st.header("📖 Product Catalog")
-    
     if inventory_df.empty:
         st.warning("No items in inventory!")
     else:
@@ -164,3 +219,12 @@ elif choice == "View Catalog":
                 st.write(f"Barcode: {row.get('Barcode', 'N/A')}")
                 st.write(f"Price: ${row['Sale Price']}")
                 st.write(f"Quantity: {row['Quantity']}")
+
+elif choice == "Export Catalog PDF":
+    st.header("📄 Export Catalog to PDF")
+    if st.button("Generate Catalog PDF"):
+        pdf_filename = generate_catalog_pdf(inventory_df)
+        with open(pdf_filename, "rb") as f:
+            st.download_button("Download Catalog PDF", f, file_name="catalog.pdf", mime="application/pdf")
+        if os.path.exists(pdf_filename):
+            os.remove(pdf_filename)
