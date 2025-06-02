@@ -7,7 +7,7 @@ import datetime
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 CREDS_FILE = "credentials.json"
-SPREADSHEET_ID = "1hwVsrPQJdv9c4GyI_QzuJLG3dImIUHxmOUBdjY7M"  # Your actual sheet ID
+SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"  # Your actual sheet ID
 
 # Connect to Google Sheets
 def connect_gsheets():
