@@ -1,49 +1,63 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
+import os
 import datetime
 
-# Google Sheets Setup
-SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDS_FILE = "credentials.json"  # Make sure this file is in your project folder
-SPREADSHEET_NAME = "Your_Google_Sheet_Name"  # <-- Change this to your actual sheet name
+# File paths
+INVENTORY_FILE = 'inventory.csv'
+SALES_FILE = 'sales.csv'
 
-# Connect to Google Sheets
-def connect_gsheets():
-    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPE)
-    client = gspread.authorize(creds)
-    sheet = client.open(SPREADSHEET_NAME)
-    return sheet
+# Initialize files if they don't exist
+def init_files():
+    if not os.path.exists(INVENTORY_FILE):
+        inventory_df = pd.DataFrame(columns=["Item Name", "Category", "Quantity", "Purchase Price", "Sale Price", "Supplier", "Notes"])
+        inventory_df.to_csv(INVENTORY_FILE, index=False)
+    if not os.path.exists(SALES_FILE):
+        sales_df = pd.DataFrame(columns=["Date", "Item Name", "Quantity Sold", "Unit Price", "Total Price"])
+        sales_df.to_csv(SALES_FILE, index=False)
 
-# Load Inventory and Sales
-@st.cache_data(ttl=60)
-def load_data():
-    sheet = connect_gsheets()
-    inventory = pd.DataFrame(sheet.worksheet("Inventory").get_all_records())
-    sales = pd.DataFrame(sheet.worksheet("Sales").get_all_records())
-    return sheet, inventory, sales
+# Load data functions
+def load_inventory():
+    return pd.read_csv(INVENTORY_FILE)
 
-# Save Inventory
+def load_sales():
+    return pd.read_csv(SALES_FILE)
+
+# Save data functions
 def save_inventory(df):
-    sheet = connect_gsheets()
-    worksheet = sheet.worksheet("Inventory")
-    worksheet.clear()
-    worksheet.update([df.columns.values.tolist()] + df.values.tolist())
+    df.to_csv(INVENTORY_FILE, index=False)
 
-# Append Sale
-def append_sale(sale_record):
-    sheet = connect_gsheets()
-    worksheet = sheet.worksheet("Sales")
-    worksheet.append_row(sale_record)
+def save_sales(df):
+    df.to_csv(SALES_FILE, index=False)
+
+# Add inventory item
+def add_inventory_item(item):
+    df = load_inventory()
+    df = pd.concat([df, pd.DataFrame([item])], ignore_index=True)
+    save_inventory(df)
+
+# Record sale transaction
+def record_sale(sales):
+    df = load_sales()
+    df = pd.concat([df, pd.DataFrame(sales)], ignore_index=True)
+    save_sales(df)
+
+# Update inventory after sale
+def update_inventory_after_sale(item_name, quantity_sold):
+    df = load_inventory()
+    index = df[df['Item Name'] == item_name].index[0]
+    df.at[index, 'Quantity'] -= quantity_sold
+    save_inventory(df)
+
+# Initialize data files
+init_files()
 
 # Streamlit App
-st.title("💼 Inventory + POS (Google Sheets)")
+st.title("💼 Inventory + POS Management System")
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics"]
 choice = st.sidebar.selectbox("Menu", menu)
 
-sheet, inventory_df, sales_df = load_data()
-
+# 1. Add Inventory
 if choice == "Add Inventory Item":
     st.header("Add New Inventory Item")
     with st.form("Add Form"):
@@ -57,7 +71,7 @@ if choice == "Add Inventory Item":
         submit = st.form_submit_button("Add Item")
         
         if submit:
-            new_row = pd.DataFrame([{
+            item = {
                 "Item Name": item_name,
                 "Category": category,
                 "Quantity": quantity,
@@ -65,65 +79,65 @@ if choice == "Add Inventory Item":
                 "Sale Price": sale_price,
                 "Supplier": supplier,
                 "Notes": notes
-            }])
-            inventory_df = pd.concat([inventory_df, new_row], ignore_index=True)
-            save_inventory(inventory_df)
+            }
+            add_inventory_item(item)
             st.success("Item added successfully!")
 
+# 2. POS
 elif choice == "Point of Sale (POS)":
     st.header("Point of Sale")
+    inventory_df = load_inventory()
+    
     if inventory_df.empty:
         st.warning("No items in inventory!")
     else:
+        cart = []
         item_selected = st.selectbox("Select Item", inventory_df['Item Name'].tolist())
         selected_item = inventory_df[inventory_df['Item Name'] == item_selected].iloc[0]
-        available_stock = int(selected_item['Quantity'])
-        quantity_sold = st.number_input("Quantity to sell", min_value=1, max_value=available_stock, step=1)
-        total_price = quantity_sold * float(selected_item['Sale Price'])
+        available_stock = selected_item['Quantity']
+        
+        quantity_sold = st.number_input("Quantity to sell", min_value=1, max_value=int(available_stock), step=1)
+        total_price = quantity_sold * selected_item['Sale Price']
         st.write(f"Total Price: ${total_price:.2f}")
         
         if st.button("Confirm Sale"):
-            # Update inventory
-            idx = inventory_df[inventory_df['Item Name'] == item_selected].index[0]
-            inventory_df.at[idx, 'Quantity'] -= quantity_sold
-            save_inventory(inventory_df)
-            
-            # Record sale
-            sale_record = [
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                item_selected,
-                quantity_sold,
-                selected_item['Sale Price'],
-                total_price
-            ]
-            append_sale(sale_record)
-            
+            sale_record = [{
+                "Date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Item Name": item_selected,
+                "Quantity Sold": quantity_sold,
+                "Unit Price": selected_item['Sale Price'],
+                "Total Price": total_price
+            }]
+            record_sale(sale_record)
+            update_inventory_after_sale(item_selected, quantity_sold)
             st.success("Sale recorded and inventory updated!")
 
+# 3. View Inventory
 elif choice == "View Inventory":
     st.header("Inventory List")
+    inventory_df = load_inventory()
     search_query = st.text_input("Search Inventory")
-    df_display = inventory_df
     if search_query:
-        df_display = df_display[df_display.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
-    st.dataframe(df_display)
+        inventory_df = inventory_df[inventory_df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
+    st.dataframe(inventory_df)
 
+# 4. Sales History
 elif choice == "Sales History":
     st.header("Sales History")
+    sales_df = load_sales()
     st.dataframe(sales_df)
 
+# 5. Statistics
 elif choice == "Statistics":
     st.header("Statistics Summary")
-    
-    inventory_df["Quantity"] = inventory_df["Quantity"].astype(float)
-    inventory_df["Purchase Price"] = inventory_df["Purchase Price"].astype(float)
-    inventory_df["Sale Price"] = inventory_df["Sale Price"].astype(float)
-    
+    inventory_df = load_inventory()
+    sales_df = load_sales()
+
     total_inventory_items = inventory_df.shape[0]
     total_stock_quantity = inventory_df['Quantity'].sum()
     total_stock_value = (inventory_df['Quantity'] * inventory_df['Purchase Price']).sum()
     potential_sales_value = (inventory_df['Quantity'] * inventory_df['Sale Price']).sum()
-    total_sales_value = sales_df['Total Price'].astype(float).sum()
+    total_sales_value = sales_df['Total Price'].sum()
 
     st.subheader("Inventory Stats")
     st.metric("Total Inventory Items", total_inventory_items)
