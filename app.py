@@ -56,7 +56,7 @@ def show_statistics():
 st.set_page_config(page_title="Inventory Management", layout="wide")
 st.title("📦 Inventory Management System")
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Add Item", "Edit Item", "Delete Item", "Statistics"])
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Edit Item", "Delete Item", "Statistics"])
 
 df = load_data()
 
