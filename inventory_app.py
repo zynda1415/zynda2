@@ -55,12 +55,11 @@ def convert_drive_link(url):
         return f"https://drive.google.com/uc?export=view&id={file_id}"
     return url
 
-# Download image safely
+# Download image safely (supports webp, jpg, png)
 def download_image(url):
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        img = Image.open(BytesIO(response.content))
         img = Image.open(BytesIO(response.content)).convert("RGB")
         return img
     except:
@@ -107,7 +106,7 @@ def generate_catalog_pdf(df, filename="catalog.pdf"):
 
 # Streamlit App
 st.title("💼 Inventory + POS (Google Sheets) + Catalog + PDF Export")
-menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog", "Export Catalog PDF"]
+menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 sheet, inventory_df, sales_df = load_data()
@@ -220,11 +219,11 @@ elif choice == "View Catalog":
                 st.write(f"Price: ${row['Sale Price']}")
                 st.write(f"Quantity: {row['Quantity']}")
 
-elif choice == "Export Catalog PDF":
-    st.header("📄 Export Catalog to PDF")
-    if st.button("Generate Catalog PDF"):
-        pdf_filename = generate_catalog_pdf(inventory_df)
-        with open(pdf_filename, "rb") as f:
-            st.download_button("Download Catalog PDF", f, file_name="catalog.pdf", mime="application/pdf")
-        if os.path.exists(pdf_filename):
-            os.remove(pdf_filename)
+        st.divider()
+        st.subheader("📄 Export This Catalog To PDF")
+        if st.button("Generate Catalog PDF"):
+            pdf_filename = generate_catalog_pdf(inventory_df)
+            with open(pdf_filename, "rb") as f:
+                st.download_button("Download Catalog PDF", f, file_name="catalog.pdf", mime="application/pdf")
+            if os.path.exists(pdf_filename):
+                os.remove(pdf_filename)
