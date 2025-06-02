@@ -55,7 +55,7 @@ def convert_drive_link(url):
         return f"https://drive.google.com/uc?export=view&id={file_id}"
     return url
 
-# Download image safely (supports webp, jpg, png)
+# Download image safely (supports jpg, png, webp)
 def download_image(url):
     try:
         response = requests.get(url, timeout=10)
@@ -105,7 +105,7 @@ def generate_catalog_pdf(df, filename="catalog.pdf"):
     return filename
 
 # Streamlit App
-st.title("💼 Inventory + POS (Google Sheets) + Catalog + PDF Export")
+st.title("💼 Inventory + POS + Catalog + PDF Export")
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
 choice = st.sidebar.selectbox("Menu", menu)
 
@@ -218,10 +218,9 @@ elif choice == "View Catalog":
                 st.write(f"Barcode: {row.get('Barcode', 'N/A')}")
                 st.write(f"Price: ${row['Sale Price']}")
                 st.write(f"Quantity: {row['Quantity']}")
-
-        st.divider()
-        st.subheader("📄 Export This Catalog To PDF")
-        if st.button("Generate Catalog PDF"):
+        
+        st.write("\n---\n")
+        if st.button("📄 Export Catalog PDF"):
             pdf_filename = generate_catalog_pdf(inventory_df)
             with open(pdf_filename, "rb") as f:
                 st.download_button("Download Catalog PDF", f, file_name="catalog.pdf", mime="application/pdf")
