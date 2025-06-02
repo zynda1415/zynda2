@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 # Google Sheets Setup
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SERVICE_ACCOUNT_FILE = 'service_account.json'  # Upload your service account file
-SPREADSHEET_ID = 'your-google-sheet-id-here'
+SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 
 # Authenticate with Google Sheets
 def connect_gsheet():
@@ -21,7 +21,7 @@ def connect_gsheet():
 
 # Load sheets
 def load_inventory():
-    sheet = connect_gsheet().worksheet('Inventory')
+    sheet = connect_gsheet().worksheet('inventory')
     data = sheet.get_all_records()
     return pd.DataFrame(data)
 
@@ -31,7 +31,7 @@ def load_sales():
     return pd.DataFrame(data)
 
 def save_inventory(df):
-    sheet = connect_gsheet().worksheet('Inventory')
+    sheet = connect_gsheet().worksheet('inventory')
     sheet.clear()
     sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
@@ -60,7 +60,7 @@ def update_inventory_after_sale(item_name, quantity_sold):
     save_inventory(df)
 
 # Streamlit App
-st.title("💼 Inventory + POS Management System (Google Sheets)")
+st.title("💼 Inventory + POS Management System (Google Sheets v5)")
 menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics"]
 choice = st.sidebar.selectbox("Menu", menu)
 
@@ -74,6 +74,7 @@ if choice == "Add Inventory Item":
         sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
         supplier = st.text_input("Supplier")
         notes = st.text_area("Notes")
+        image_url = st.text_input("Image URL")
         submit = st.form_submit_button("Add Item")
         
         if submit:
@@ -84,7 +85,8 @@ if choice == "Add Inventory Item":
                 "Purchase Price": purchase_price,
                 "Sale Price": sale_price,
                 "Supplier": supplier,
-                "Notes": notes
+                "Notes": notes,
+                "Image URL": image_url
             }
             add_inventory_item(item)
             st.success("Item added successfully!")
@@ -107,7 +109,8 @@ elif choice == "Point of Sale (POS)":
         if st.button("Confirm Sale"):
             sale_record = [{
                 "Date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Item Name": item_selected,
+                "Item": item_selected,
+                "Name": "",  # Optional field, kept empty since your Sales tab has 'Item' and 'Name'
                 "Quantity Sold": quantity_sold,
                 "Unit Price": selected_item['Sale Price'],
                 "Total Price": total_price
