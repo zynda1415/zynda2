@@ -3,6 +3,7 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import datetime
+import re
 
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -36,6 +37,15 @@ def append_sale(sale_record):
     sheet = connect_gsheets()
     worksheet = sheet.worksheet("Sales")
     worksheet.append_row(sale_record)
+
+# Convert Google Drive link to direct image link
+def convert_drive_link(url):
+    pattern = r"https://drive\.google\.com/file/d/(.*?)/"
+    match = re.search(pattern, url)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/uc?export=view&id={file_id}"
+    return url
 
 # Streamlit App
 st.title("💼 Inventory + POS (Google Sheets) + Catalog")
@@ -144,8 +154,10 @@ elif choice == "View Catalog":
         for idx, row in inventory_df.iterrows():
             col = cols[idx % 4]
             with col:
-                if row['Image URL']:
-                    st.image(row['Image URL'], use_container_width=True)
+                image_url = row['Image URL']
+                if image_url:
+                    image_url = convert_drive_link(image_url)
+                    st.image(image_url, use_container_width=True)
                 else:
                     st.write("No Image")
                 st.write(f"**{row['Item Name']}**")
