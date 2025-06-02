@@ -18,9 +18,19 @@ import json
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
 
-# Read credentials from Streamlit Secrets - FIXED
-# Convert the TOML section to dictionary format
-creds_dict = dict(st.secrets["gcp_service_account"])
+# Read credentials from Streamlit Secrets - ROBUST VERSION
+try:
+    # Try to parse as JSON string first (most common format)
+    if isinstance(st.secrets["gcp_service_account"], str):
+        creds_dict = json.loads(st.secrets["gcp_service_account"])
+    else:
+        # If it's already a dict-like object, convert it
+        creds_dict = dict(st.secrets["gcp_service_account"])
+except Exception as e:
+    st.error(f"Error loading credentials: {e}")
+    st.error("Please check your secrets configuration")
+    st.stop()
+
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SPREADSHEET_ID)
