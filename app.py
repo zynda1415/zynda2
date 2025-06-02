@@ -1,26 +1,42 @@
 import streamlit as st
 import pandas as pd
-import os
+import gspread
+import json
+from google.oauth2.service_account import Credentials
 
-# CSV file to store inventory data
-CSV_FILE = 'inventory.csv'
+# Google Sheets Setup
+SHEET_NAME = 'Inventory'  # Name of your Google Sheet tab
+SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 
 # Define inventory columns
 COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes']
 
-# Load data from CSV
+# Connect to Google Sheets using Streamlit secrets
+def connect_gsheets():
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
+    return sheet
+
+# Load data from Google Sheets
 @st.cache_data(ttl=60)
 def load_data():
-    if os.path.exists(CSV_FILE):
-        df = pd.read_csv(CSV_FILE)
-    else:
+    sheet = connect_gsheets()
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    if df.empty:
         df = pd.DataFrame(columns=COLUMNS)
-        df.to_csv(CSV_FILE, index=False)
     return df
 
-# Save data to CSV
+# Save dataframe to Google Sheets
 def save_data(df):
-    df.to_csv(CSV_FILE, index=False)
+    sheet = connect_gsheets()
+    sheet.clear()
+    sheet.append_row(COLUMNS)
+    for row in df.itertuples(index=False):
+        sheet.append_row(list(row))
 
 # Add a new item
 def add_item(new_item):
