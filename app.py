@@ -6,14 +6,14 @@ import datetime
 
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDS_FILE = "credentials.json"
-SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
+CREDS_FILE = "credentials.json"  # Make sure this file is in your project folder
+SPREADSHEET_NAME = "Your_Google_Sheet_Name"  # <-- Change this to your actual sheet name
 
 # Connect to Google Sheets
 def connect_gsheets():
     creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID)
+    sheet = client.open(SPREADSHEET_NAME)
     return sheet
 
 # Load Inventory and Sales
@@ -38,8 +38,8 @@ def append_sale(sale_record):
     worksheet.append_row(sale_record)
 
 # Streamlit App
-st.title("💼 Inventory + POS (Google Sheets) + Catalog")
-menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics", "View Catalog"]
+st.title("💼 Inventory + POS (Google Sheets)")
+menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 sheet, inventory_df, sales_df = load_data()
@@ -54,7 +54,6 @@ if choice == "Add Inventory Item":
         sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
         supplier = st.text_input("Supplier")
         notes = st.text_area("Notes")
-        image_url = st.text_input("Image URL (optional)")
         submit = st.form_submit_button("Add Item")
         
         if submit:
@@ -65,8 +64,7 @@ if choice == "Add Inventory Item":
                 "Purchase Price": purchase_price,
                 "Sale Price": sale_price,
                 "Supplier": supplier,
-                "Notes": notes,
-                "Image URL": image_url
+                "Notes": notes
             }])
             inventory_df = pd.concat([inventory_df, new_row], ignore_index=True)
             save_inventory(inventory_df)
@@ -85,10 +83,12 @@ elif choice == "Point of Sale (POS)":
         st.write(f"Total Price: ${total_price:.2f}")
         
         if st.button("Confirm Sale"):
+            # Update inventory
             idx = inventory_df[inventory_df['Item Name'] == item_selected].index[0]
             inventory_df.at[idx, 'Quantity'] -= quantity_sold
             save_inventory(inventory_df)
             
+            # Record sale
             sale_record = [
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 item_selected,
@@ -133,22 +133,3 @@ elif choice == "Statistics":
 
     st.subheader("Sales Stats")
     st.metric("Total Sales Revenue", f"${total_sales_value:,.2f}")
-
-elif choice == "View Catalog":
-    st.header("📖 Product Catalog")
-    
-    if inventory_df.empty:
-        st.warning("No items in inventory!")
-    else:
-        cols = st.columns(4)
-        for idx, row in inventory_df.iterrows():
-            col = cols[idx % 4]
-            with col:
-                if row['Image URL']:
-                    st.image(row['Image URL'], use_column_width=True)
-                else:
-                    st.write("No Image")
-                st.write(f"**{row['Item Name']}**")
-                st.write(f"Barcode: {row.get('Barcode', 'N/A')}")
-                st.write(f"Price: ${row['Sale Price']}")
-                st.write(f"Quantity: {row['Quantity']}")
