@@ -9,7 +9,7 @@ SHEET_NAME = 'Inventory'  # Name of your Google Sheet tab
 SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 
 # Define inventory columns
-COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes']
+COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
 
 # Connect to Google Sheets using Streamlit secrets
 def connect_gsheets():
@@ -35,10 +35,9 @@ def save_data(df):
     sheet = connect_gsheets()
     sheet.clear()
     sheet.append_row(COLUMNS)
-    values = df.astype(str).values.tolist()  # <-- The magic fix
+    values = df.astype(str).values.tolist()
     for row in values:
         sheet.append_row(row)
-
 
 # Add a new item
 def add_item(new_item):
@@ -110,6 +109,7 @@ elif menu == "Item":
             sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
             supplier = st.text_input("Supplier")
             notes = st.text_area("Notes")
+            image_url = st.text_input("Image URL")
             
             submitted = st.form_submit_button("Add Item")
             
@@ -121,7 +121,8 @@ elif menu == "Item":
                     'Purchase Price': purchase_price,
                     'Sale Price': sale_price,
                     'Supplier': supplier,
-                    'Notes': notes
+                    'Notes': notes,
+                    'Image URL': image_url
                 }
                 add_item(new_item)
                 st.success("Item added successfully!")
@@ -143,6 +144,7 @@ elif menu == "Item":
                 sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
                 supplier = st.text_input("Supplier", value=selected_row['Supplier'])
                 notes = st.text_area("Notes", value=selected_row['Notes'])
+                image_url = st.text_input("Image URL", value=selected_row['Image URL'])
                 
                 submitted = st.form_submit_button("Save Changes")
                 
@@ -154,7 +156,8 @@ elif menu == "Item":
                         'Purchase Price': purchase_price,
                         'Sale Price': sale_price,
                         'Supplier': supplier,
-                        'Notes': notes
+                        'Notes': notes,
+                        'Image URL': image_url
                     }
                     edit_item(item_to_edit, updated_item)
                     st.success("Item updated successfully!")
