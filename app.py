@@ -1,72 +1,84 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import gspread
-from google.oauth2.service_account import Credentials
+import os
 
-# Google Sheets Setup
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
+# CSV file to store inventory data
+CSV_FILE = 'inventory.csv'
 
-# Authenticate with Google Sheets using Streamlit Secrets
-def connect_gsheet():
-    service_account_info = st.secrets["gcp_service_account"]
-    credentials = Credentials.from_service_account_info(
-        service_account_info,
-        scopes=SCOPES
-    )
-    gc = gspread.authorize(credentials)
-    sh = gc.open_by_key(SPREADSHEET_ID)
-    return sh
+# Define inventory columns
+COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes']
 
-# Load sheets
-def load_inventory():
-    sheet = connect_gsheet().worksheet('inventory')
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+# Load data from CSV
+@st.cache_data(ttl=60)
+def load_data():
+    if os.path.exists(CSV_FILE):
+        df = pd.read_csv(CSV_FILE)
+    else:
+        df = pd.DataFrame(columns=COLUMNS)
+        df.to_csv(CSV_FILE, index=False)
+    return df
 
-def load_sales():
-    sheet = connect_gsheet().worksheet('Sales')
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+# Save data to CSV
+def save_data(df):
+    df.to_csv(CSV_FILE, index=False)
 
-def save_inventory(df):
-    sheet = connect_gsheet().worksheet('inventory')
-    sheet.clear()
-    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+# Add a new item
+def add_item(new_item):
+    df = load_data()
+    df = pd.concat([df, pd.DataFrame([new_item])], ignore_index=True)
+    save_data(df)
 
-def save_sales(df):
-    sheet = connect_gsheet().worksheet('Sales')
-    sheet.clear()
-    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+# Edit an existing item
+def edit_item(index, updated_item):
+    df = load_data()
+    df.loc[index] = updated_item
+    save_data(df)
 
-# Add inventory item
-def add_inventory_item(item):
-    df = load_inventory()
-    df = pd.concat([df, pd.DataFrame([item])], ignore_index=True)
-    save_inventory(df)
+# Delete an item
+def delete_item(index):
+    df = load_data()
+    df = df.drop(index).reset_index(drop=True)
+    save_data(df)
 
-# Record sale transaction
-def record_sale(sales):
-    df = load_sales()
-    df = pd.concat([df, pd.DataFrame(sales)], ignore_index=True)
-    save_sales(df)
+# Show statistics
+def show_statistics():
+    df = load_data()
+    total_items = len(df)
+    total_quantity = df['Quantity'].sum() if not df.empty else 0
+    total_value = (df['Quantity'] * df['Sale Price']).sum() if not df.empty else 0
 
-# Update inventory after sale
-def update_inventory_after_sale(item_name, quantity_sold):
-    df = load_inventory()
-    index = df[df['Item Name'] == item_name].index[0]
-    df.at[index, 'Quantity'] = int(df.at[index, 'Quantity']) - quantity_sold
-    save_inventory(df)
+    st.subheader("Inventory Statistics")
+    st.write(f"Total Items: {total_items}")
+    st.write(f"Total Quantity: {total_quantity}")
+    st.write(f"Total Inventory Value: ${total_value:,.2f}")
 
-# Streamlit App
-st.title("💼 Inventory + POS Management System (Google Sheets v5.2)")
-menu = ["Add Inventory Item", "Point of Sale (POS)", "View Inventory", "Sales History", "Statistics"]
-choice = st.sidebar.selectbox("Menu", menu)
+# Main Streamlit app
+st.set_page_config(page_title="Inventory Management", layout="wide")
+st.title("📦 Inventory Management System")
 
-if choice == "Add Inventory Item":
-    st.header("Add New Inventory Item")
-    with st.form("Add Form"):
+menu = st.sidebar.radio("Menu", ["View Inventory", "Add Item", "Edit Item", "Delete Item", "Statistics"])
+
+df = load_data()
+
+if menu == "View Inventory":
+    st.subheader("Inventory List")
+    
+    # Filtering options
+    search = st.text_input("Search by Item Name")
+    category_filter = st.selectbox("Filter by Category", ['All'] + sorted(df['Category'].dropna().unique()))
+
+    filtered_df = df.copy()
+    if search:
+        filtered_df = filtered_df[filtered_df['Item Name'].str.contains(search, case=False, na=False)]
+    if category_filter != 'All':
+        filtered_df = filtered_df[filtered_df['Category'] == category_filter]
+
+    st.dataframe(filtered_df, use_container_width=True)
+
+elif menu == "Add Item":
+    st.subheader("Add New Item")
+    
+    with st.form("add_form"):
         item_name = st.text_input("Item Name")
         category = st.text_input("Category")
         quantity = st.number_input("Quantity", min_value=0, step=1)
@@ -74,80 +86,65 @@ if choice == "Add Inventory Item":
         sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
         supplier = st.text_input("Supplier")
         notes = st.text_area("Notes")
-        image_url = st.text_input("Image URL")
-        submit = st.form_submit_button("Add Item")
-
-        if submit:
-            item = {
-                "Item Name": item_name,
-                "Category": category,
-                "Quantity": quantity,
-                "Purchase Price": purchase_price,
-                "Sale Price": sale_price,
-                "Supplier": supplier,
-                "Notes": notes,
-                "Image URL": image_url
+        
+        submitted = st.form_submit_button("Add Item")
+        
+        if submitted:
+            new_item = {
+                'Item Name': item_name,
+                'Category': category,
+                'Quantity': quantity,
+                'Purchase Price': purchase_price,
+                'Sale Price': sale_price,
+                'Supplier': supplier,
+                'Notes': notes
             }
-            add_inventory_item(item)
+            add_item(new_item)
             st.success("Item added successfully!")
 
-elif choice == "Point of Sale (POS)":
-    st.header("Point of Sale")
-    inventory_df = load_inventory()
+elif menu == "Edit Item":
+    st.subheader("Edit Existing Item")
 
-    if inventory_df.empty:
-        st.warning("No items in inventory!")
+    if df.empty:
+        st.warning("No items to edit.")
     else:
-        item_selected = st.selectbox("Select Item", inventory_df['Item Name'].tolist())
-        selected_item = inventory_df[inventory_df['Item Name'] == item_selected].iloc[0]
-        available_stock = int(selected_item['Quantity'])
+        item_to_edit = st.selectbox("Select Item to Edit", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
+        selected_row = df.loc[item_to_edit]
+        
+        with st.form("edit_form"):
+            item_name = st.text_input("Item Name", value=selected_row['Item Name'])
+            category = st.text_input("Category", value=selected_row['Category'])
+            quantity = st.number_input("Quantity", min_value=0, step=1, value=int(selected_row['Quantity']))
+            purchase_price = st.number_input("Purchase Price", min_value=0.0, step=0.01, value=float(selected_row['Purchase Price']))
+            sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
+            supplier = st.text_input("Supplier", value=selected_row['Supplier'])
+            notes = st.text_area("Notes", value=selected_row['Notes'])
+            
+            submitted = st.form_submit_button("Save Changes")
+            
+            if submitted:
+                updated_item = {
+                    'Item Name': item_name,
+                    'Category': category,
+                    'Quantity': quantity,
+                    'Purchase Price': purchase_price,
+                    'Sale Price': sale_price,
+                    'Supplier': supplier,
+                    'Notes': notes
+                }
+                edit_item(item_to_edit, updated_item)
+                st.success("Item updated successfully!")
 
-        quantity_sold = st.number_input("Quantity to sell", min_value=1, max_value=available_stock, step=1)
-        total_price = quantity_sold * float(selected_item['Sale Price'])
-        st.write(f"Total Price: ${total_price:.2f}")
+elif menu == "Delete Item":
+    st.subheader("Delete Item")
 
-        if st.button("Confirm Sale"):
-            sale_record = [{
-                "Date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Item": item_selected,
-                "Name": "",
-                "Quantity Sold": quantity_sold,
-                "Unit Price": selected_item['Sale Price'],
-                "Total Price": total_price
-            }]
-            record_sale(sale_record)
-            update_inventory_after_sale(item_selected, quantity_sold)
-            st.success("Sale recorded and inventory updated!")
+    if df.empty:
+        st.warning("No items to delete.")
+    else:
+        item_to_delete = st.selectbox("Select Item to Delete", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
+        if st.button("Delete"):
+            delete_item(item_to_delete)
+            st.success("Item deleted successfully!")
 
-elif choice == "View Inventory":
-    st.header("Inventory List")
-    inventory_df = load_inventory()
-    search_query = st.text_input("Search Inventory")
-    if search_query:
-        inventory_df = inventory_df[inventory_df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
-    st.dataframe(inventory_df)
-
-elif choice == "Sales History":
-    st.header("Sales History")
-    sales_df = load_sales()
-    st.dataframe(sales_df)
-
-elif choice == "Statistics":
-    st.header("Statistics Summary")
-    inventory_df = load_inventory()
-    sales_df = load_sales()
-
-    total_inventory_items = inventory_df.shape[0]
-    total_stock_quantity = inventory_df['Quantity'].astype(int).sum()
-    total_stock_value = (inventory_df['Quantity'].astype(float) * inventory_df['Purchase Price'].astype(float)).sum()
-    potential_sales_value = (inventory_df['Quantity'].astype(float) * inventory_df['Sale Price'].astype(float)).sum()
-    total_sales_value = sales_df['Total Price'].astype(float).sum()
-
-    st.subheader("Inventory Stats")
-    st.metric("Total Inventory Items", total_inventory_items)
-    st.metric("Total Stock Quantity", total_stock_quantity)
-    st.metric("Total Stock Purchase Value", f"${total_stock_value:,.2f}")
-    st.metric("Potential Sales Value", f"${potential_sales_value:,.2f}")
-
-    st.subheader("Sales Stats")
-    st.metric("Total Sales Revenue", f"${total_sales_value:,.2f}")
+elif menu == "Statistics":
+    show_statistics()
