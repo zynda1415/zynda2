@@ -6,14 +6,14 @@ import datetime
 
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-CREDS_FILE = "credentials.json"  # Make sure this file is in your project folder
-SPREADSHEET_NAME = "zynda2"  # <-- Change this to your actual sheet name
+CREDS_FILE = "credentials.json"
+SPREADSHEET_ID = "1hwVsrPQJdv9c4GyI_QzuJLG3dImIUHxmOUBdjY7M"  # Your actual sheet ID
 
 # Connect to Google Sheets
 def connect_gsheets():
     creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open(SPREADSHEET_NAME)
+    sheet = client.open_by_key(SPREADSHEET_ID)
     return sheet
 
 # Load Inventory and Sales
