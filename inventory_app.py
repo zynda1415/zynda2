@@ -7,7 +7,7 @@ import datetime
 # Google Sheets Setup
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 CREDS_FILE = "credentials.json"  # Make sure this file is in your project folder
-SPREADSHEET_NAME = "zynda2"  # <-- Change this to your actual sheet name
+SPREADSHEET_NAME = "Your_Google_Sheet_Name"  # <-- Change this to your actual sheet name
 
 # Connect to Google Sheets
 def connect_gsheets():
