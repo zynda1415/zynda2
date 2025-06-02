@@ -145,7 +145,7 @@ elif choice == "View Catalog":
             col = cols[idx % 4]
             with col:
                 if row['Image URL']:
-                    st.image(row['Image URL'], use_column_width=True)
+                    st.image(row['Image URL'], use_container_width=True)
                 else:
                     st.write("No Image")
                 st.write(f"**{row['Item Name']}**")
