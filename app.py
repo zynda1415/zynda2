@@ -11,7 +11,7 @@ SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 
 # Authenticate with Google Sheets using Streamlit Secrets
 def connect_gsheet():
-    service_account_info = json.loads(st.secrets["gcp_service_account"])
+   service_account_info = st.secrets["gcp_service_account"]
     credentials = Credentials.from_service_account_info(
         service_account_info,
         scopes=SCOPES
