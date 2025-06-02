@@ -2,7 +2,7 @@ from reportlab.platypus import SimpleDocTemplate, Image as RLImage, Spacer, Tabl
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from io import BytesIO
-from ..utils.image_downloader import download_image
+from utils.image_downloader import download_image
 
 def generate_catalog_pdf(df, filename="catalog.pdf"):
     doc = SimpleDocTemplate(filename, pagesize=A4)
