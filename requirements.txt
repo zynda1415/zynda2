@@ -1,1 +1,6 @@
-https://drive.google.com/drive/folders/18kaAXbaCaP3JLfK1QwNx_g885995QR7P?usp=drive_link
+streamlit
+pandas
+gspread
+google-auth
+google-auth-oauthlib
+pydrive2
