@@ -39,7 +39,7 @@ if menu == "View Inventory":
             cols[4].write(f"Price: ${row['Sale Price']}")
 
 elif menu == "Item":
-    item.render_item_section(df, data.add_item, data.edit_item, data.delete_item, data.upload_image_to_drive)
+    item.render_item_section(df, data.add_item, data.edit_item, data.delete_item)
 
 elif menu == "Statistics":
     st.subheader("Inventory Statistics")
