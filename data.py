@@ -56,34 +56,34 @@ def delete_item(index):
     df = df.drop(index).reset_index(drop=True)
     save_data(df)
 
-# Google Drive Upload
+# Bulletproof Google Drive upload (no ServiceAccountAuth anymore)
 def upload_image_to_drive(file):
     creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    
+    # Save credentials json file temporarily (required for pydrive2 legacy interface)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp_json:
+        json.dump(creds_dict, tmp_json)
+        tmp_json_path = tmp_json.name
 
+    # Authenticate pydrive2
     gauth = GoogleAuth()
-    gauth.credentials = Credentials.from_service_account_info(
-        creds_dict,
-        scopes=["https://www.googleapis.com/auth/drive"]
-    )
+    gauth.LoadServiceConfigFile(tmp_json_path)
+    gauth.ServiceAuth()
     drive = GoogleDrive(gauth)
 
-    # Save uploaded file to a temporary file
+    # Save uploaded file to temporary file
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         tmp_file.write(file.read())
         tmp_file_path = tmp_file.name
 
-    # Upload to Google Drive
     file_drive = drive.CreateFile({'title': file.name, 'parents': [{'id': DRIVE_FOLDER_ID}]})
     file_drive.SetContentFile(tmp_file_path)
     file_drive.Upload()
 
     os.remove(tmp_file_path)
+    os.remove(tmp_json_path)
 
-    # Create sharable URL
-    file_drive.InsertPermission({
-        'type': 'anyone',
-        'value': 'anyone',
-        'role': 'reader'
-    })
+    # Public URL
+    file_drive.InsertPermission({'type': 'anyone', 'value': 'anyone', 'role': 'reader'})
     file_url = f"https://drive.google.com/uc?id={file_drive['id']}"
     return file_url
