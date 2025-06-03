@@ -3,18 +3,11 @@ import gspread
 import json
 import streamlit as st
 from google.oauth2.service_account import Credentials
-from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive
-import tempfile
-import os
 
 # Google Sheets Setup
 SHEET_NAME = 'Inventory'
 SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
-
-# Your Google Drive folder ID:
-DRIVE_FOLDER_ID = '18kaAXbaCaP3JLfK1QwNx_g885995QR7P'
 
 def connect_gsheets():
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -33,13 +26,13 @@ def load_data():
         df = pd.DataFrame(columns=COLUMNS)
     return df
 
-# ✅ FAST append_row for add_item()
+# FAST APPEND (faster adds)
 def add_item(new_item):
     sheet = connect_gsheets()
     values = [new_item.get(col, "") for col in COLUMNS]
     sheet.append_row(values)
 
-# ✅ Full rewrite still used for Edit & Delete
+# Full rewrite for edit/delete
 def save_data(df):
     sheet = connect_gsheets()
     sheet.clear()
@@ -57,31 +50,3 @@ def delete_item(index):
     df = load_data()
     df = df.drop(index).reset_index(drop=True)
     save_data(df)
-
-# Google Drive Upload (unchanged)
-def upload_image_to_drive(file):
-    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp_json:
-        json.dump(creds_dict, tmp_json)
-        tmp_json_path = tmp_json.name
-
-    gauth = GoogleAuth()
-    gauth.LoadServiceConfigFile(tmp_json_path)
-    gauth.ServiceAuth()
-    drive = GoogleDrive(gauth)
-
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(file.read())
-        tmp_file_path = tmp_file.name
-
-    file_drive = drive.CreateFile({'title': file.name, 'parents': [{'id': DRIVE_FOLDER_ID}]})
-    file_drive.SetContentFile(tmp_file_path)
-    file_drive.Upload()
-
-    os.remove(tmp_file_path)
-    os.remove(tmp_json_path)
-
-    file_drive.InsertPermission({'type': 'anyone', 'value': 'anyone', 'role': 'reader'})
-    file_url = f"https://drive.google.com/uc?id={file_drive['id']}"
-    return file_url
