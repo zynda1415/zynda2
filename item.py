@@ -1,7 +1,6 @@
 import streamlit as st
-from your_module import add_item, edit_item, delete_item  # Replace 'your_module' by your data functions module
 
-def render_item_section(df):
+def render_item_section(df, add_item, edit_item, delete_item):
     st.subheader("Item Management")
 
     item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
