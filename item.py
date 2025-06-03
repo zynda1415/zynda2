@@ -1,6 +1,6 @@
 import streamlit as st
 
-def render_item_section(df, add_item, edit_item, delete_item, upload_image_to_drive):
+def render_item_section(df, add_item, edit_item, delete_item):
     st.subheader("Item Management")
 
     item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
@@ -15,16 +15,11 @@ def render_item_section(df, add_item, edit_item, delete_item, upload_image_to_dr
             sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
             supplier = st.text_input("Supplier")
             notes = st.text_area("Notes")
-
             image_url = st.text_input("Image URL (Paste full image link)")
+
             submitted = st.form_submit_button("Add Item")
 
-            image_url = ""
             if submitted:
-                if uploaded_file is not None:
-                    image_url = upload_image_to_drive(uploaded_file)
-                    st.success("Image uploaded successfully!")
-
                 new_item = {
                     'Item Name': item_name,
                     'Category': category,
@@ -54,7 +49,7 @@ def render_item_section(df, add_item, edit_item, delete_item, upload_image_to_dr
                 sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
                 supplier = st.text_input("Supplier", value=selected_row['Supplier'])
                 notes = st.text_area("Notes", value=selected_row['Notes'])
-                image_url = st.text_input("Image URL", value=selected_row['Image URL'])
+                image_url = st.text_input("Image URL (Paste full image link)", value=selected_row['Image URL'])
 
                 submitted = st.form_submit_button("Save Changes")
 
