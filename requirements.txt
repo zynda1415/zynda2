@@ -4,3 +4,4 @@ gspread
 google-auth
 google-auth-oauthlib
 pydrive2==1.15.0
+--upgrade
