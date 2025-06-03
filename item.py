@@ -16,7 +16,7 @@ def render_item_section(df, add_item, edit_item, delete_item, upload_image_to_dr
             supplier = st.text_input("Supplier")
             notes = st.text_area("Notes")
 
-            uploaded_file = st.file_uploader("Upload Image", type=["png", "jpg", "jpeg"])
+            image_url = st.text_input("Image URL (Paste full image link)")
             submitted = st.form_submit_button("Add Item")
 
             image_url = ""
