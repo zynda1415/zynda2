@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 import data
 import item
-import item_catalog
 
 st.set_page_config(page_title="Inventory Management", layout="wide")
 st.title("📦 Inventory Management System")
 
 df = data.load_data()
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View"])
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics"])
 
 if menu == "View Inventory":
     st.subheader("Inventory List")
@@ -51,6 +50,3 @@ elif menu == "Statistics":
     st.write(f"Total Items: {total_items}")
     st.write(f"Total Quantity: {total_quantity}")
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
-
-elif menu == "Catalog View":
-    item_catalog.render_catalog_view()
