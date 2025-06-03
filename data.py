@@ -1,8 +1,8 @@
 import pandas as pd
 import gspread
 import json
-import streamlit as st
 from google.oauth2.service_account import Credentials
+import streamlit as st
 
 # Google Sheets Setup
 SHEET_NAME = 'Inventory'
@@ -26,13 +26,6 @@ def load_data():
         df = pd.DataFrame(columns=COLUMNS)
     return df
 
-# FAST APPEND (faster adds)
-def add_item(new_item):
-    sheet = connect_gsheets()
-    values = [new_item.get(col, "") for col in COLUMNS]
-    sheet.append_row(values)
-
-# Full rewrite for edit/delete
 def save_data(df):
     sheet = connect_gsheets()
     sheet.clear()
@@ -41,12 +34,7 @@ def save_data(df):
     for row in values:
         sheet.append_row(row)
 
-def edit_item(index, updated_item):
+def add_item(new_item):
     df = load_data()
-    df.loc[index] = updated_item
-    save_data(df)
-
-def delete_item(index):
-    df = load_data()
-    df = df.drop(index).reset_index(drop=True)
+    df = pd.concat([df, pd.DataFrame([new_item])], ignore_index=True)
     save_data(df)
