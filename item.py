@@ -1,6 +1,6 @@
 import streamlit as st
 
-def render_item_section(df, add_item, edit_item, delete_item):
+def render_item_section(df, add_item, edit_item, delete_item, upload_image_to_drive):
     st.subheader("Item Management")
 
     item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
@@ -15,11 +15,16 @@ def render_item_section(df, add_item, edit_item, delete_item):
             sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
             supplier = st.text_input("Supplier")
             notes = st.text_area("Notes")
-            image_url = st.text_input("Image URL")
 
+            uploaded_file = st.file_uploader("Upload Image", type=["png", "jpg", "jpeg"])
             submitted = st.form_submit_button("Add Item")
 
+            image_url = ""
             if submitted:
+                if uploaded_file is not None:
+                    image_url = upload_image_to_drive(uploaded_file)
+                    st.success("Image uploaded successfully!")
+
                 new_item = {
                     'Item Name': item_name,
                     'Category': category,
