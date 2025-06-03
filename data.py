@@ -1,13 +1,20 @@
 import pandas as pd
 import gspread
 import json
-from google.oauth2.service_account import Credentials
 import streamlit as st
+from google.oauth2.service_account import Credentials
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
+import tempfile
+import os
 
 # Google Sheets Setup
 SHEET_NAME = 'Inventory'
 SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
 COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
+
+# Your Google Drive folder ID:
+DRIVE_FOLDER_ID = '18kaAXbaCaP3JLfK1QwNx_g885995QR7P'
 
 def connect_gsheets():
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -48,3 +55,35 @@ def delete_item(index):
     df = load_data()
     df = df.drop(index).reset_index(drop=True)
     save_data(df)
+
+# Google Drive Upload
+def upload_image_to_drive(file):
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+
+    gauth = GoogleAuth()
+    gauth.credentials = Credentials.from_service_account_info(
+        creds_dict,
+        scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    drive = GoogleDrive(gauth)
+
+    # Save uploaded file to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(file.read())
+        tmp_file_path = tmp_file.name
+
+    # Upload to Google Drive
+    file_drive = drive.CreateFile({'title': file.name, 'parents': [{'id': DRIVE_FOLDER_ID}]})
+    file_drive.SetContentFile(tmp_file_path)
+    file_drive.Upload()
+
+    os.remove(tmp_file_path)
+
+    # Create sharable URL
+    file_drive.InsertPermission({
+        'type': 'anyone',
+        'value': 'anyone',
+        'role': 'reader'
+    })
+    file_url = f"https://drive.google.com/uc?id={file_drive['id']}"
+    return file_url
