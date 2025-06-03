@@ -23,19 +23,26 @@ if menu == "View Inventory":
         filtered_df = filtered_df[filtered_df['Category'] == category_filter]
 
     for index, row in filtered_df.iterrows():
-        with st.container():
-            cols = st.columns([1, 2, 2, 2, 2])
-            # Image
-            if row['Image URL']:
-                cols[0].image(row['Image URL'], width=80)
-            else:
-                cols[0].write("No Image")
+    with st.container():
+        cols = st.columns([1, 2, 2, 2, 2])
 
-            # Other fields
-            cols[1].write(f"**{row['Item Name']}**")
-            cols[2].write(f"Category: {row['Category']}")
-            cols[3].write(f"Quantity: {row['Quantity']}")
-            cols[4].write(f"Price: ${row['Sale Price']}")
+        # Image handling safely
+        image_url = row.get('Image URL', '').strip()
+
+        if image_url:
+            try:
+                cols[0].image(image_url, width=80)
+            except Exception:
+                cols[0].write("Invalid Image")
+        else:
+            cols[0].write("No Image")
+
+        # Other fields
+        cols[1].write(f"**{row['Item Name']}**")
+        cols[2].write(f"Category: {row['Category']}")
+        cols[3].write(f"Quantity: {row['Quantity']}")
+        cols[4].write(f"Price: ${row['Sale Price']}")
+
 
 elif menu == "Item":
     item.render_item_section(df, data.add_item, data.edit_item, data.delete_item)
