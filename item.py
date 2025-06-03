@@ -1,6 +1,7 @@
 import streamlit as st
+import edit_delete
 
-def render_item_section(df, add_item, edit_item, delete_item):
+def render_item_section(df, add_item):
     st.subheader("Item Management")
 
     item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
@@ -15,7 +16,7 @@ def render_item_section(df, add_item, edit_item, delete_item):
             sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
             supplier = st.text_input("Supplier")
             notes = st.text_area("Notes")
-            image_url = st.text_input("Image URL (Paste full image link)")
+            image_url = st.text_input("Image URL")
 
             submitted = st.form_submit_button("Add Item")
 
@@ -49,7 +50,7 @@ def render_item_section(df, add_item, edit_item, delete_item):
                 sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
                 supplier = st.text_input("Supplier", value=selected_row['Supplier'])
                 notes = st.text_area("Notes", value=selected_row['Notes'])
-                image_url = st.text_input("Image URL (Paste full image link)", value=selected_row['Image URL'])
+                image_url = st.text_input("Image URL", value=selected_row['Image URL'])
 
                 submitted = st.form_submit_button("Save Changes")
 
@@ -64,7 +65,7 @@ def render_item_section(df, add_item, edit_item, delete_item):
                         'Notes': notes,
                         'Image URL': image_url
                     }
-                    edit_item(item_to_edit, updated_item)
+                    edit_delete.edit_item(item_to_edit, updated_item)
                     st.success("Item updated successfully!")
 
     elif item_action == "Delete Item":
@@ -74,5 +75,5 @@ def render_item_section(df, add_item, edit_item, delete_item):
         else:
             item_to_delete = st.selectbox("Select Item to Delete", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
             if st.button("Delete"):
-                delete_item(item_to_delete)
+                edit_delete.delete_item(item_to_delete)
                 st.success("Item deleted successfully!")
