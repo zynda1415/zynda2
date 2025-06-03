@@ -24,8 +24,6 @@ if menu == "View Inventory":
     for index, row in filtered_df.iterrows():
         with st.container():
             cols = st.columns([1, 2, 2, 2, 2])
-
-            # Safely handle image
             image_url = str(row.get('Image URL', '')).strip()
             if image_url and image_url.lower() != 'nan':
                 try:
@@ -41,7 +39,7 @@ if menu == "View Inventory":
             cols[4].write(f"Price: ${row['Sale Price']}")
 
 elif menu == "Item":
-    item.render_item_section(df, data.add_item, data.edit_item, data.delete_item)
+    item.render_item_section(df, data.add_item, data.edit_item, data.delete_item, data.upload_image_to_drive)
 
 elif menu == "Statistics":
     st.subheader("Inventory Statistics")
