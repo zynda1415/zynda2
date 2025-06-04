@@ -9,7 +9,7 @@ st.title("📦 Inventory Management System")
 
 df = data.load_data()
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics"])
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View"])
 
 if menu == "View Inventory":
     preview.render_preview(df)
@@ -26,3 +26,7 @@ elif menu == "Statistics":
     st.write(f"Total Items: {total_items}")
     st.write(f"Total Quantity: {total_quantity}")
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
+
+elif menu == "Catalog View":
+    preview_v2.render_preview(df)
+
