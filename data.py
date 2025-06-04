@@ -33,6 +33,8 @@ def save_data(df):
     values = df.astype(str).values.tolist()
     for row in values:
         sheet.append_row(row)
+    # Clear cached data so subsequent calls reflect the latest changes
+    load_data.clear()
 
 def add_item(new_item):
     df = load_data()
