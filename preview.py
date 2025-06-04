@@ -1,9 +1,10 @@
-preview_item.import streamlit as st
+import streamlit as st
 import pandas as pd
 
-def render_preview(df):
-    st.subheader("Inventory List")
-    
+def render_preview_v2(df):
+    st.subheader("🖼 Inventory Catalog View")
+
+    # Filtering
     search = st.text_input("Search by Item Name")
     category_filter = st.selectbox("Filter by Category", ['All'] + sorted(df['Category'].dropna().unique()))
 
@@ -13,20 +14,29 @@ def render_preview(df):
     if category_filter != 'All':
         filtered_df = filtered_df[filtered_df['Category'] == category_filter]
 
-    for index, row in filtered_df.iterrows():
-        with st.container():
-            cols = st.columns([1, 2, 2, 2, 2])
-            image_url = str(row.get('Image URL', '')).strip()
-            if image_url and image_url.lower() != 'nan':
-                try:
-                    cols[0].image(image_url, width=80)
-                except Exception:
-                    cols[0].write("Invalid Image")
-            else:
-                cols[0].write("No Image")
+    # Set number of columns (fully responsive)
+    num_cols = st.slider("Columns per row", 2, 5, 3)
 
-            cols[1].write(f"**{row['Item Name']}**")
-            cols[2].write(f"Category: {row['Category']}")
-            cols[3].write(f"Quantity: {row['Quantity']}")
-            cols[4].write(f"Price: ${row['Sale Price']}")
-py
+    # Render as grid
+    for i in range(0, len(filtered_df), num_cols):
+        row_items = filtered_df.iloc[i:i+num_cols]
+        cols = st.columns(len(row_items))
+
+        for idx, row in enumerate(row_items.itertuples()):
+            with cols[idx]:
+                st.markdown("<div style='border:1px solid #ddd; padding:10px; border-radius:10px;'>", unsafe_allow_html=True)
+                
+                image_url = str(row._8).strip()  # Image URL is 8th column (zero-indexed)
+                if image_url and image_url.lower() != 'nan':
+                    try:
+                        st.image(image_url, use_column_width=True)
+                    except:
+                        st.write("(Invalid Image)")
+                else:
+                    st.write("(No Image)")
+
+                st.write(f"**{row._1}**")  # Item Name
+                st.write(f"Category: {row._2}")
+                st.write(f"Quantity: {row._3}")
+                st.write(f"Price: ${row._5}")
+                st.markdown("</div>", unsafe_allow_html=True)
