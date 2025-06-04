@@ -9,7 +9,7 @@ st.title("📦 Inventory Management System")
 
 df = data.load_data()
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View"])
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map"])
 
 if menu == "View Inventory":
     preview.render_preview(df)
