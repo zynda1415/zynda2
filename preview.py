@@ -22,12 +22,11 @@ def render_preview(df):
         row_items = filtered_df.iloc[i:i+num_cols]
         cols = st.columns(len(row_items))
 
-        for idx, row in enumerate(row_items.itertuples()):
+        for idx, row in enumerate(row_items.itertuples(index=False, name=None)):
             with cols[idx]:
                 st.markdown("<div style='border:1px solid #ddd; padding:10px; border-radius:10px;'>", unsafe_allow_html=True)
-                
-                # Image handling
-                image_url = str(row._8).strip()  # Image URL column (8th column in your table)
+
+                image_url = str(row[7]).strip()  # Image URL (8th column, index starts at 0)
                 if image_url and image_url.lower() != 'nan':
                     try:
                         st.image(image_url, use_container_width=True)
@@ -36,8 +35,8 @@ def render_preview(df):
                 else:
                     st.write("(No Image)")
 
-                st.write(f"**{row._1}**")  # Item Name
-                st.write(f"Category: {row._2}")
-                st.write(f"Quantity: {row._3}")
-                st.write(f"Price: ${row._5}")
+                st.write(f"**{row[0]}**")  # Item Name
+                st.write(f"Category: {row[1]}")
+                st.write(f"Quantity: {row[2]}")
+                st.write(f"Price: ${row[4]}")
                 st.markdown("</div>", unsafe_allow_html=True)
