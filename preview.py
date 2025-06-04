@@ -29,7 +29,7 @@ def render_preview(df):
                 image_url = str(row._8).strip()  # Image URL is 8th column (zero-indexed)
                 if image_url and image_url.lower() != 'nan':
                     try:
-                        st.image(image_url, use_column_width=True)
+                        st.image(image_url, use_container_width=True)
                     except:
                         st.write("(Invalid Image)")
                 else:
