@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-def render_preview_v2(df):
+def render_preview(df):
     st.subheader("🖼 Inventory Catalog View")
 
     # Filtering
