@@ -1,7 +1,6 @@
 import streamlit as st
-import edit_delete
 
-def render_item_section(df, add_item):
+def render_item_section(df, add_item, edit_item, delete_item):
     st.subheader("Item Management")
 
     item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
@@ -65,7 +64,7 @@ def render_item_section(df, add_item):
                         'Notes': notes,
                         'Image URL': image_url
                     }
-                    edit_delete.edit_item(item_to_edit, updated_item)
+                    edit_item(item_to_edit, updated_item)
                     st.success("Item updated successfully!")
 
     elif item_action == "Delete Item":
@@ -75,5 +74,5 @@ def render_item_section(df, add_item):
         else:
             item_to_delete = st.selectbox("Select Item to Delete", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
             if st.button("Delete"):
-                edit_delete.delete_item(item_to_delete)
+                delete_item(item_to_delete)
                 st.success("Item deleted successfully!")
