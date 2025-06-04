@@ -14,10 +14,10 @@ def render_preview(df):
     if category_filter != 'All':
         filtered_df = filtered_df[filtered_df['Category'] == category_filter]
 
-    # Set number of columns (fully responsive)
+    # Columns per row (fully responsive)
     num_cols = st.slider("Columns per row", 2, 5, 3)
 
-    # Render as grid
+    # Render grid layout
     for i in range(0, len(filtered_df), num_cols):
         row_items = filtered_df.iloc[i:i+num_cols]
         cols = st.columns(len(row_items))
@@ -26,7 +26,8 @@ def render_preview(df):
             with cols[idx]:
                 st.markdown("<div style='border:1px solid #ddd; padding:10px; border-radius:10px;'>", unsafe_allow_html=True)
                 
-                image_url = str(row._8).strip()  # Image URL is 8th column (zero-indexed)
+                # Image handling
+                image_url = str(row._8).strip()  # Image URL column (8th column in your table)
                 if image_url and image_url.lower() != 'nan':
                     try:
                         st.image(image_url, use_container_width=True)
