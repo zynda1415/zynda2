@@ -28,5 +28,6 @@ elif menu == "Statistics":
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
 
 elif menu == "Catalog View":
-    preview_v2.render_preview(df)
+    preview.render_preview(df)
+
 
