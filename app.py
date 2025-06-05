@@ -35,16 +35,6 @@ elif menu == "Statistics":
 elif menu == "Catalog View":
     preview.render_preview(df)
 
-# Map Tab
+# Map Tab (fully modular)
 elif menu == "Map":
-    st.subheader("📍 Inventory Map View")
-
-    if 'Latitude' in df.columns and 'Longitude' in df.columns:
-        # Only show map if coordinates exist
-        map_data = df[['Latitude', 'Longitude']].dropna()
-        if not map_data.empty:
-            st.map(map_data)
-        else:
-            st.warning("Latitude/Longitude columns exist, but no data found.")
-    else:
-        st.warning("No Latitude/Longitude columns found in your sheet.")
+    mapview.render_map()
