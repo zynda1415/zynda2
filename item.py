@@ -3,7 +3,6 @@
 
 # ----------- app.py -----------
 import streamlit as st
-from item import item_management
 from preview import catalog_view
 from statistics_module import show_statistics
 from mapview import client_map
