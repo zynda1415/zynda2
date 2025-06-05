@@ -1,4 +1,3 @@
-# ----------- app.py -----------
 import streamlit as st
 from item import item_management
 from preview import catalog_view
@@ -9,7 +8,15 @@ from clients import clients_management
 
 st.set_page_config(page_title="Inventory Management System", layout="wide")
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales", "Clients"])
+menu = st.sidebar.radio("Menu", [
+    "View Inventory", 
+    "Item", 
+    "Statistics", 
+    "Catalog View", 
+    "Map", 
+    "Sales", 
+    "Clients"
+])
 
 if menu == "View Inventory":
     catalog_view()
@@ -19,6 +26,9 @@ elif menu == "Item":
 
 elif menu == "Statistics":
     show_statistics()
+
+elif menu == "Catalog View":
+    catalog_view()
 
 elif menu == "Map":
     client_map()
