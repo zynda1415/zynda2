@@ -39,3 +39,5 @@ def render_map():
             st.warning("Latitude/Longitude columns exist but no valid coordinates found.")
     else:
         st.warning("No Latitude/Longitude columns found in your Clients sheet.")
+        df.columns = df.columns.str.strip()
+
