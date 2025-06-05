@@ -16,6 +16,8 @@ def load_clients_data():
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
+    # STRIP column names to avoid Google Sheets space bugs
+    df.columns = df.columns.str.strip()
     return df
 
 def render_map():
@@ -26,11 +28,9 @@ def render_map():
     if 'Latitude' in df.columns and 'Longitude' in df.columns:
         map_data = df[['Latitude', 'Longitude']]
 
-        # FULL FIX — convert to numeric
         map_data['Latitude'] = pd.to_numeric(map_data['Latitude'], errors='coerce')
         map_data['Longitude'] = pd.to_numeric(map_data['Longitude'], errors='coerce')
 
-        # Remove rows where lat/lon are still invalid
         map_data = map_data.dropna()
 
         if not map_data.empty:
