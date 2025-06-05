@@ -24,16 +24,16 @@ def render_map():
     df = load_clients_data()
 
     if 'Latitude' in df.columns and 'Longitude' in df.columns:
-        map_data = df[['Latitude', 'Longitude']].dropna()
+    map_data = df[['Latitude', 'Longitude']]
 
-        # Validate numeric values (sometimes values may be text)
-        map_data['Latitude'] = pd.to_numeric(map_data['Latitude'], errors='coerce')
-        map_data['Longitude'] = pd.to_numeric(map_data['Longitude'], errors='coerce')
-        map_data = map_data.dropna()
+    # FULL FIX — convert to numeric
+    map_data['Latitude'] = pd.to_numeric(map_data['Latitude'], errors='coerce')
+    map_data['Longitude'] = pd.to_numeric(map_data['Longitude'], errors='coerce')
 
-        if not map_data.empty:
-            st.map(map_data)
-        else:
-            st.warning("Latitude/Longitude columns exist, but no valid data found.")
+    # Remove rows where lat/lon are still invalid
+    map_data = map_data.dropna()
+
+    if not map_data.empty:
+        st.map(map_data)
     else:
-        st.warning("No Latitude/Longitude columns found in your Clients sheet.")
+        st.warning("Latitude/Longitude columns exist but no valid coordinates found.")
