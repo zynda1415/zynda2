@@ -1,50 +1,80 @@
+# ZYNDA_SYSTEM v1.8
+# Full Clean Base Structure
+
+# ----------- app.py -----------
+import streamlit as st
+from item import item_management
+from preview import catalog_view
+from statistics_module import show_statistics
+from mapview import client_map
+from sales import sales_management
+from clients import clients_management
+
+st.set_page_config(page_title="Inventory Management System", layout="wide")
+
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales", "Clients"])
+
+if menu == "View Inventory":
+    catalog_view()
+
+elif menu == "Item":
+    item_management()
+
+elif menu == "Statistics":
+    show_statistics()
+
+elif menu == "Map":
+    client_map()
+
+elif menu == "Sales":
+    sales_management()
+
+elif menu == "Clients":
+    clients_management()
+
+# ----------- data.py -----------
 import pandas as pd
 import gspread
 import json
 from google.oauth2.service_account import Credentials
-import streamlit as st
 
-# Google Sheets Setup
-SHEET_NAME = 'Inventory'
-SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
-COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
+SPREADSHEET_ID = 'your_spreadsheet_id_here'
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 
 def connect_gsheets():
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
     creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
-    return sheet
+    return client.open_by_key(SPREADSHEET_ID)
 
-@st.cache_data(ttl=60)
-def load_data():
-    sheet = connect_gsheets()
+def load_inventory():
+    sheet = connect_gsheets().worksheet('Inventory')
     data = sheet.get_all_records()
-    df = pd.DataFrame(data)
-    if df.empty:
-        df = pd.DataFrame(columns=COLUMNS)
-    return df
+    return pd.DataFrame(data)
 
-def save_data(df):
-    sheet = connect_gsheets()
+def save_inventory(df):
+    sheet = connect_gsheets().worksheet('Inventory')
     sheet.clear()
-    sheet.append_row(COLUMNS)
-    values = df.astype(str).values.tolist()
-    for row in values:
-        sheet.append_row(row)
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
-def add_item(new_item):
-    df = load_data()
-    df = pd.concat([df, pd.DataFrame([new_item])], ignore_index=True)
-    save_data(df)
+# Similar functions for Clients and Sales
 
-def edit_item(index, updated_item):
-    df = load_data()
-    df.loc[index] = updated_item
-    save_data(df)
+def load_clients():
+    sheet = connect_gsheets().worksheet('Clients')
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
 
-def delete_item(index):
-    df = load_data()
-    df = df.drop(index).reset_index(drop=True)
-    save_data(df)
+def save_clients(df):
+    sheet = connect_gsheets().worksheet('Clients')
+    sheet.clear()
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+
+def load_sales():
+    sheet = connect_gsheets().worksheet('Sales')
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
+
+def save_sales(df):
+    sheet = connect_gsheets().worksheet('Sales')
+    sheet.clear()
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
