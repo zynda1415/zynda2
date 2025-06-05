@@ -15,17 +15,17 @@ def load_clients_data():
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
-    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "")
     return df
 
 def render_map():
     st.subheader("📍 Client Map View")
     df = load_clients_data()
 
-    if 'Latitude' in df.columns and 'Longitude' in df.columns:
-        map_data = df[['Latitude', 'Longitude']]
-        map_data['Latitude'] = pd.to_numeric(map_data['Latitude'], errors='coerce')
-        map_data['Longitude'] = pd.to_numeric(map_data['Longitude'], errors='coerce')
+    if 'latitude' in df.columns and 'longitude' in df.columns:
+        map_data = df[['latitude', 'longitude']]
+        map_data['latitude'] = pd.to_numeric(map_data['latitude'], errors='coerce')
+        map_data['longitude'] = pd.to_numeric(map_data['longitude'], errors='coerce')
         map_data = map_data.dropna()
 
         if not map_data.empty:
