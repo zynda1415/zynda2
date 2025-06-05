@@ -1,4 +1,3 @@
-# ----------- sales.py -----------
 import streamlit as st
 import data
 import pandas as pd
@@ -23,6 +22,7 @@ def sales_management():
             sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
             data.save_sales(sales_df)
             st.success("Sale recorded!")
-            
-            # Decrease inventory
-            inventory_df.loc[inventory_df['Item Name']==item, 'Quantity'] -= qty
+
+            # Update inventory
+            inventory_df.loc[inventory_df['Item Name'] == item, 'Quantity'] -= qty
+            data.save_inventory(inventory_df)
