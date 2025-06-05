@@ -3,6 +3,7 @@ import pandas as pd
 import data
 import item
 import preview
+import mapview
 
 st.set_page_config(page_title="Inventory Management", layout="wide")
 st.title("📦 Inventory Management System")
