@@ -15,7 +15,7 @@ def catalog_module():
     search = st.text_input("🔎 Search", placeholder="Search Item Name, Category, or Notes...")
     category_filter = st.selectbox("📂 Filter by Category", ["All"] + list(df['Category'].unique()))
     sort_option = st.selectbox("↕️ Sort By", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
-    columns_per_row = st.slider("🖥️ Columns per row", 1, 5, 3)
+    columns_per_row = st.selectbox("🖥️ Columns per row", [1, 2, 3, 4, 5], index=2)
     items_per_page = st.selectbox("📄 Items per page", [10, 20, 50], index=0)
 
     if search:
