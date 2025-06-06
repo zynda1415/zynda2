@@ -2,6 +2,8 @@ import streamlit as st
 import data
 import pandas as pd
 from fpdf import FPDF
+import tempfile
+import os
 
 def export_pdf_module():
     st.header("📄 Export Reports to PDF")
@@ -28,24 +30,39 @@ def export_pdf_module():
         st.download_button("Download Sales Summary PDF", pdf_bytes, file_name=filename)
 
 def generate_pdf(df):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=10)
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        temp_filename = tmp_file.name
+    
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=10)
 
-    # Calculate column width
-    col_width = pdf.w / (len(df.columns) + 1)
+        # Calculate column width
+        col_width = pdf.w / (len(df.columns) + 1)
 
-    # Add headers
-    for col in df.columns:
-        pdf.cell(col_width, 10, str(col), border=1)
-    pdf.ln()
-
-    # Add data rows
-    for i, row in df.iterrows():
-        for item in row:
-            pdf.cell(col_width, 10, str(item), border=1)
+        # Add headers
+        for col in df.columns:
+            pdf.cell(col_width, 10, str(col), border=1)
         pdf.ln()
 
-    # Fixed PDF output - use bytes() instead of encode()
-    pdf_output = bytes(pdf.output())
-    return pdf_output
+        # Add data rows
+        for i, row in df.iterrows():
+            for item in row:
+                pdf.cell(col_width, 10, str(item), border=1)
+            pdf.ln()
+
+        # Output to temporary file
+        pdf.output(temp_filename)
+        
+        # Read the file and return bytes
+        with open(temp_filename, 'rb') as f:
+            pdf_bytes = f.read()
+            
+        return pdf_bytes
+        
+    finally:
+        # Clean up temporary file
+        if os.path.exists(temp_filename):
+            os.unlink(temp_filename)
