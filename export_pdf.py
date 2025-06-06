@@ -15,7 +15,8 @@ def export_pdf_module():
         generate_pdf(df, filename)
         st.success("PDF Generated Successfully!")
         with open(filename, "rb") as file:
-            st.download_button("Download Inventory PDF", file, filename=filename)
+            file_bytes = file.read()
+            st.download_button("Download Inventory PDF", file_bytes, file_name=filename)
 
     elif report_type == "Sales Summary":
         sales_df = data.load_sales()
@@ -27,7 +28,8 @@ def export_pdf_module():
         generate_pdf(summary, filename)
         st.success("PDF Generated Successfully!")
         with open(filename, "rb") as file:
-            st.download_button("Download Sales Summary PDF", file, filename=filename)
+            file_bytes = file.read()
+            st.download_button("Download Sales Summary PDF", file_bytes, file_name=filename)
 
 def generate_pdf(df, filename):
     pdf = FPDF()
