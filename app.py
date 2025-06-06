@@ -1,13 +1,15 @@
+
 import streamlit as st
 import preview
 import item
 import mapview
 import data
 import sales
+import sales_summary
 
 st.set_page_config(page_title="Inventory Management System", layout="wide")
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales"])
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales", "Sales Summary"])
 
 if menu == "View Inventory":
     df = data.load_inventory()
@@ -36,3 +38,7 @@ elif menu == "Map":
 
 elif menu == "Sales":
     sales.sales_module()
+
+
+elif menu == "Sales Summary":
+    sales_summary.sales_summary_module()
