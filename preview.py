@@ -5,6 +5,7 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 from PIL import Image
 import io
+import base64
 
 def catalog_module():
     st.header("📦 Inventory Catalog")
@@ -24,7 +25,7 @@ def catalog_module():
     </style>
     """, unsafe_allow_html=True)
 
-    # Filters - pure Streamlit columns for stability
+    # Filters
     col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
 
     with col1:
@@ -78,7 +79,7 @@ def catalog_module():
         for col, (_, row) in zip(cols, page_data.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    # 💎 FIXED SQUARE IMAGE BOX 💎
+                    # Fixed square image box
                     st.markdown(f"""
                     <div style="
                         width: 200px; 
@@ -126,14 +127,37 @@ def catalog_module():
                         unsafe_allow_html=True
                     )
 
-                    # Barcode
+                    # Barcode with fixed box
                     code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
                     barcode_img = generate_barcode_image(code_value)
-                    st.image(barcode_img, width=150)
+                    
+                    buffer = io.BytesIO()
+                    barcode_img.save(buffer, format="PNG")
+                    b64_barcode = base64.b64encode(buffer.getvalue()).decode()
+
+                    st.markdown(f"""
+                    <div style="
+                        width: 150px; 
+                        height: 80px; 
+                        border-radius: 6px; 
+                        overflow: hidden; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center;
+                        border: 1px solid #ddd;
+                        margin: auto;
+                    ">
+                        <img src="data:image/png;base64,{b64_barcode}" style="
+                            width: 100%; 
+                            height: 100%; 
+                            object-fit: contain;
+                        ">
+                    </div>
+                    """, unsafe_allow_html=True)
 
     st.write(f"Showing page {page} of {total_pages}")
 
-# Barcode generation function
+# Barcode generator function
 def generate_barcode_image(code_value):
     barcode_io = io.BytesIO()
     options = {
