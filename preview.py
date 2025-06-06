@@ -1,42 +1,25 @@
 import streamlit as st
-import pandas as pd
+import data
 
-def render_preview(df):
-    st.subheader("🖼 Inventory Catalog View")
+def catalog_module():
+    st.header("📦 Inventory Catalog View")
 
-    # Filtering
+    df = data.load_inventory()
     search = st.text_input("Search by Item Name")
-    category_filter = st.selectbox("Filter by Category", ['All'] + sorted(df['Category'].dropna().unique()))
+    category_filter = st.selectbox("Filter by Category", ["All"] + list(df['Category'].unique()))
+    columns_per_row = st.slider("Columns per row", 1, 5, 3)
 
-    filtered_df = df.copy()
     if search:
-        filtered_df = filtered_df[filtered_df['Item Name'].str.contains(search, case=False, na=False)]
-    if category_filter != 'All':
-        filtered_df = filtered_df[filtered_df['Category'] == category_filter]
+        df = df[df['Item Name'].str.contains(search, case=False)]
+    if category_filter != "All":
+        df = df[df['Category'] == category_filter]
 
-    # Columns per row (fully responsive)
-    num_cols = st.slider("Columns per row", 2, 5, 3)
-
-    # Render grid layout
-    for i in range(0, len(filtered_df), num_cols):
-        row_items = filtered_df.iloc[i:i+num_cols]
-        cols = st.columns(len(row_items))
-
-        for idx, row in enumerate(row_items.itertuples(index=False, name=None)):
-            with cols[idx]:
-                st.markdown("<div style='border:1px solid #ddd; padding:10px; border-radius:10px;'>", unsafe_allow_html=True)
-
-                image_url = str(row[7]).strip()  # Image URL (8th column, index starts at 0)
-                if image_url and image_url.lower() != 'nan':
-                    try:
-                        st.image(image_url, use_container_width=True)
-                    except:
-                        st.write("(Invalid Image)")
-                else:
-                    st.write("(No Image)")
-
-                st.write(f"**{row[0]}**")  # Item Name
-                st.write(f"Category: {row[1]}")
-                st.write(f"Quantity: {row[2]}")
-                st.write(f"Price: ${row[4]}")
-                st.markdown("</div>", unsafe_allow_html=True)
+    for i in range(0, len(df), columns_per_row):
+        cols = st.columns(columns_per_row)
+        for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
+            with col:
+                st.image(row['Image URL'], width=150)
+                st.write(f"**{row['Item Name']}**")
+                st.write(f"Category: {row['Category']}")
+                st.write(f"Quantity: {row['Quantity']}")
+                st.write(f"Price: ${row['Sale Price']}")
