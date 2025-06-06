@@ -1,5 +1,6 @@
 import streamlit as st
 import preview
+import clients
 import item
 import mapview
 import data
@@ -17,7 +18,8 @@ menu = st.sidebar.radio("Menu", [
     "Catalog View", 
     "Map", 
     "Sales", 
-    "Sales Summary", 
+    "Sales Summary",
+    "Clients Management",
     "Sales Charts", 
     "Export PDF"   # ✅ Added new menu option
 ])
@@ -58,3 +60,7 @@ elif menu == "Sales Charts":
 
 elif menu == "Export PDF":
     export_pdf.export_pdf_module()
+
+elif menu == "Clients Management":
+    clients.clients_module()
+
