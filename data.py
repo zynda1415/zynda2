@@ -1,46 +1,50 @@
-# ---------- data.py ----------
-import streamlit as st
 import pandas as pd
 import gspread
 import json
 from google.oauth2.service_account import Credentials
+import streamlit as st
 
-# Setup Google Sheets
-SPREADSHEET_ID = 'your_spreadsheet_id_here'
-SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
+# Google Sheets Setup
+SHEET_NAME = 'Inventory'
+SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
+COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
 
 def connect_gsheets():
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
     creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
-    return client.open_by_key(SPREADSHEET_ID)
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
+    return sheet
 
-def load_inventory():
-    sheet = connect_gsheets().worksheet('Inventory')
+@st.cache_data(ttl=60)
+def load_data():
+    sheet = connect_gsheets()
     data = sheet.get_all_records()
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+    if df.empty:
+        df = pd.DataFrame(columns=COLUMNS)
+    return df
 
-def save_inventory(df):
-    sheet = connect_gsheets().worksheet('Inventory')
+def save_data(df):
+    sheet = connect_gsheets()
     sheet.clear()
-    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+    sheet.append_row(COLUMNS)
+    values = df.astype(str).values.tolist()
+    for row in values:
+        sheet.append_row(row)
 
-def load_clients():
-    sheet = connect_gsheets().worksheet('Clients')
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+def add_item(new_item):
+    df = load_data()
+    df = pd.concat([df, pd.DataFrame([new_item])], ignore_index=True)
+    save_data(df)
 
-def save_clients(df):
-    sheet = connect_gsheets().worksheet('Clients')
-    sheet.clear()
-    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+def edit_item(index, updated_item):
+    df = load_data()
+    df.loc[index] = updated_item
+    save_data(df)
 
-def load_sales():
-    sheet = connect_gsheets().worksheet('Sales')
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
-
-def save_sales(df):
-    sheet = connect_gsheets().worksheet('Sales')
-    sheet.clear()
-    sheet.update([df.columns.values.tolist()] + df.values.tolist())
+def delete_item(index):
+    df = load_data()
+    df = df.drop(index).reset_index(drop=True)
+    save_data(df)
