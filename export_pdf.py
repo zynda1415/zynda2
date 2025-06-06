@@ -9,10 +9,16 @@ import os
 class ProfessionalPDF(FPDF):
     def __init__(self, company_name="Your Company", company_address="", company_phone="", company_email=""):
         super().__init__()
+
+        # UNICODE FONT SUPPORT
+        self.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+        self.set_font('DejaVu', '', 12)
+
         self.company_name = company_name
         self.company_address = company_address
         self.company_phone = company_phone
         self.company_email = company_email
+
         
     def header(self):
         self.set_font('Arial', 'B', 16)
