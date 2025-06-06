@@ -4,12 +4,17 @@ import preview
 import item
 import mapview
 import data
+import sales_charts
 import sales
 import sales_summary
 
 st.set_page_config(page_title="Inventory Management System", layout="wide")
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales", "Sales Summary"])
+menu = st.sidebar.radio("Menu", [
+    "View Inventory", "Item", "Statistics", "Catalog View", 
+    "Map", "Sales", "Sales Summary", "Sales Charts"
+])
+
 
 if menu == "View Inventory":
     df = data.load_inventory()
