@@ -44,6 +44,8 @@ elif menu == "Map":
 elif menu == "Sales":
     sales.sales_module()
 
+elif menu == "Sales Charts":
+    sales_charts.sales_charts_module()
 
 elif menu == "Sales Summary":
     sales_summary.sales_summary_module()
