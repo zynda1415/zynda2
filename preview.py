@@ -7,10 +7,11 @@ from PIL import Image
 import io
 
 def catalog_module():
-    st.header("📦 Inventory Catalog with Barcodes")
+    st.header("📦 Inventory Catalog")
 
     df = data.load_inventory()
 
+    # Search & Filters
     search = st.text_input("🔎 Search", placeholder="Search Item Name, Category, or Notes...")
     category_filter = st.selectbox("📂 Filter by Category", ["All"] + list(df['Category'].unique()))
     sort_option = st.selectbox("↕️ Sort By", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
@@ -49,37 +50,60 @@ def catalog_module():
         for col, (_, row) in zip(cols, page_data.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    st.image(row['Image URL'], width=150)
-                    
-                    st.markdown(f"<h4 style='text-align:center'>{row['Item Name']}</h4>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align:center; color: gray'>Category: {row['Category']}</p>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='text-align:center; font-weight:bold; color:green;'>${row['Sale Price']:.2f}</p>", unsafe_allow_html=True)
+                    st.image(row['Image URL'], width=180)
 
-                    stock_qty = row['Quantity']
-                    if stock_qty == 0:
-                        color = 'red'
-                        label = 'Out of Stock'
-                    elif stock_qty < 5:
-                        color = 'orange'
-                        label = 'Low Stock'
-                    else:
-                        color = 'green'
-                        label = 'In Stock'
-                    
+                    # Product Name
                     st.markdown(
-                        f"<div style='background-color:{color}; color:white; text-align:center; padding:4px; border-radius:6px;'>"
-                        f"Stock: {stock_qty} ({label})</div>", 
+                        f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", 
                         unsafe_allow_html=True
                     )
 
-                    # Render barcode (assume you have column 'Code')
+                    # Category
+                    st.markdown(
+                        f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", 
+                        unsafe_allow_html=True
+                    )
+
+                    # Price
+                    st.markdown(
+                        f"<div style='text-align:center; font-weight:bold; color:green; font-size:16px;'>${row['Sale Price']:.2f}</div>", 
+                        unsafe_allow_html=True
+                    )
+
+                    # Stock Badge (balanced)
+                    stock_qty = row['Quantity']
+                    if stock_qty == 0:
+                        badge_color = 'red'
+                        badge_label = 'Out of Stock'
+                    elif stock_qty < 5:
+                        badge_color = 'orange'
+                        badge_label = 'Low Stock'
+                    else:
+                        badge_color = 'green'
+                        badge_label = 'In Stock'
+
+                    st.markdown(
+                        f"<div style='background-color:{badge_color}; color:white; text-align:center; "
+                        f"padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
+                        unsafe_allow_html=True
+                    )
+
+                    # Barcode Rendering (balanced)
                     code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
                     barcode_img = generate_barcode_image(code_value)
-                    st.image(barcode_img, caption=f"Barcode: {code_value}")
+                    st.image(barcode_img, use_column_width=False, width=150)
+
+    st.write(f"Showing page {page} of {total_pages}")
 
 def generate_barcode_image(code_value):
     barcode_io = io.BytesIO()
-    Code128(code_value, writer=ImageWriter()).write(barcode_io)
+    options = {
+        'module_width': 0.3,  # Thinner bars
+        'module_height': 20,  # Lower barcode height
+        'font_size': 8,
+        'text_distance': 1,
+    }
+    Code128(code_value, writer=ImageWriter()).write(barcode_io, options)
     barcode_io.seek(0)
     img = Image.open(barcode_io)
     return img
