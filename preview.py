@@ -11,7 +11,7 @@ def catalog_module():
 
     df = data.load_inventory()
 
-    # Light background bar for filters
+    # Light background filter bar
     st.markdown("""
     <style>
     div[data-testid="stHorizontalBlock"] {
@@ -24,7 +24,7 @@ def catalog_module():
     </style>
     """, unsafe_allow_html=True)
 
-    # Clean horizontal filter layout using native Streamlit columns:
+    # Filters - pure Streamlit columns for stability
     col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
 
     with col1:
@@ -78,13 +78,34 @@ def catalog_module():
         for col, (_, row) in zip(cols, page_data.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    # Fixed height image container
-                    st.markdown("<div style='height:200px; display:flex; align-items:center; justify-content:center;'>", unsafe_allow_html=True)
-                    st.image(row['Image URL'], width=180)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    # 💎 FIXED SQUARE IMAGE BOX 💎
+                    st.markdown(f"""
+                    <div style="
+                        width: 200px; 
+                        height: 200px; 
+                        border-radius: 10px; 
+                        overflow: hidden; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center;
+                        border: 1px solid #ddd;
+                        margin: auto;
+                    ">
+                        <img src="{row['Image URL']}" style="
+                            width: 100%; 
+                            height: 100%; 
+                            object-fit: contain;
+                        ">
+                    </div>
+                    """, unsafe_allow_html=True)
 
+                    # Item Name
                     st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
+
+                    # Category
                     st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
+
+                    # Price
                     st.markdown(f"<div style='text-align:center; font-weight:bold; color:green; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
 
                     # Stock badge
@@ -112,7 +133,7 @@ def catalog_module():
 
     st.write(f"Showing page {page} of {total_pages}")
 
-# Barcode generator function
+# Barcode generation function
 def generate_barcode_image(code_value):
     barcode_io = io.BytesIO()
     options = {
