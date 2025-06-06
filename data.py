@@ -1,50 +1,39 @@
-import pandas as pd
 import gspread
-import json
+import pandas as pd
 from google.oauth2.service_account import Credentials
+import json
 import streamlit as st
 
-# Google Sheets Setup
-SHEET_NAME = 'Inventory'
-SPREADSHEET_ID = '1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M'
-COLUMNS = ['Item Name', 'Category', 'Quantity', 'Purchase Price', 'Sale Price', 'Supplier', 'Notes', 'Image URL']
+# Load credentials from Streamlit secrets
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
+creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+client = gspread.authorize(creds)
+SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
+sheet = client.open_by_key(SPREADSHEET_ID)
 
-def connect_gsheets():
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
-    return sheet
-
-@st.cache_data(ttl=60)
-def load_data():
-    sheet = connect_gsheets()
-    data = sheet.get_all_records()
+# Load inventory
+def load_inventory():
+    ws = sheet.worksheet("Inventory")
+    data = ws.get_all_records()
     df = pd.DataFrame(data)
-    if df.empty:
-        df = pd.DataFrame(columns=COLUMNS)
     return df
 
-def save_data(df):
-    sheet = connect_gsheets()
-    sheet.clear()
-    sheet.append_row(COLUMNS)
-    values = df.astype(str).values.tolist()
-    for row in values:
-        sheet.append_row(row)
+# Load clients
+def load_clients():
+    ws = sheet.worksheet("Clients")
+    data = ws.get_all_records()
+    df = pd.DataFrame(data)
+    return df
 
-def add_item(new_item):
-    df = load_data()
-    df = pd.concat([df, pd.DataFrame([new_item])], ignore_index=True)
-    save_data(df)
+# Load sales
+def load_sales():
+    ws = sheet.worksheet("Sales")
+    data = ws.get_all_records()
+    df = pd.DataFrame(data)
+    return df
 
-def edit_item(index, updated_item):
-    df = load_data()
-    df.loc[index] = updated_item
-    save_data(df)
-
-def delete_item(index):
-    df = load_data()
-    df = df.drop(index).reset_index(drop=True)
-    save_data(df)
+# Save new sales record
+def save_sale(date, item, name, quantity_sold, unit_price, total_price):
+    ws = sheet.worksheet("Sales")
+    ws.append_row([date, item, name, quantity_sold, unit_price, total_price])
