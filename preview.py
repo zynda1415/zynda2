@@ -7,17 +7,34 @@ def catalog_module():
 
     df = data.load_inventory()
 
-    # Search & Filter
-    search = st.text_input("🔎 Search Items", placeholder="Enter item name...")
+    # Advanced Search
+    search = st.text_input("🔎 Search", placeholder="Search Item Name, Category, or Notes...")
     category_filter = st.selectbox("📂 Filter by Category", ["All"] + list(df['Category'].unique()))
+    sort_option = st.selectbox("↕️ Sort By", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
     columns_per_row = st.slider("🖥️ Columns per row", 1, 5, 3)
     items_per_page = st.selectbox("📄 Items per page", [10, 20, 50], index=0)
 
-    # Apply filters
+    # Apply Search
     if search:
-        df = df[df['Item Name'].str.contains(search, case=False, na=False)]
+        df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
+                         or search.lower() in str(row['Category']).lower()
+                         or search.lower() in str(row.get('Notes', '')).lower(), axis=1)]
+    
+    # Apply Category Filter
     if category_filter != "All":
         df = df[df['Category'] == category_filter]
+
+    # Apply Sorting
+    if sort_option == "Item Name (A-Z)":
+        df = df.sort_values(by='Item Name', ascending=True)
+    elif sort_option == "Price (Low-High)":
+        df = df.sort_values(by='Sale Price', ascending=True)
+    elif sort_option == "Price (High-Low)":
+        df = df.sort_values(by='Sale Price', ascending=False)
+    elif sort_option == "Stock (Low-High)":
+        df = df.sort_values(by='Quantity', ascending=True)
+    elif sort_option == "Stock (High-Low)":
+        df = df.sort_values(by='Quantity', ascending=False)
 
     # Pagination Logic
     total_items = len(df)
