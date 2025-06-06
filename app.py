@@ -1,4 +1,4 @@
-
+import export_pdf
 import streamlit as st
 import preview
 import item
@@ -12,7 +12,7 @@ st.set_page_config(page_title="Inventory Management System", layout="wide")
 
 menu = st.sidebar.radio("Menu", [
     "View Inventory", "Item", "Statistics", "Catalog View", 
-    "Map", "Sales", "Sales Summary", "Sales Charts"
+    "Map", "Sales", "Sales Summary", "Sales Charts", "Export PDF"
 ])
 
 
@@ -43,6 +43,9 @@ elif menu == "Map":
 
 elif menu == "Sales":
     sales.sales_module()
+
+elif menu == "Export PDF":
+    export_pdf.export_pdf_module()
 
 elif menu == "Sales Charts":
     sales_charts.sales_charts_module()
