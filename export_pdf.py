@@ -2,6 +2,7 @@ import streamlit as st
 import data
 import pandas as pd
 from fpdf import FPDF
+from io import BytesIO
 
 def export_pdf_module():
     st.header("📄 Export Reports to PDF")
@@ -12,11 +13,9 @@ def export_pdf_module():
     if report_type == "Inventory":
         df = data.load_inventory()
         filename = "inventory_report.pdf"
-        generate_pdf(df, filename)
+        pdf_bytes = generate_pdf(df)
         st.success("PDF Generated Successfully!")
-        with open(filename, "rb") as file:
-            file_bytes = file.read()
-            st.download_button("Download Inventory PDF", file_bytes, file_name=filename)
+        st.download_button("Download Inventory PDF", pdf_bytes, file_name=filename)
 
     elif report_type == "Sales Summary":
         sales_df = data.load_sales()
@@ -25,13 +24,11 @@ def export_pdf_module():
 
         summary = sales_df.groupby('Item').agg({'Quantity Sold': 'sum', 'Total Price': 'sum'}).reset_index()
         filename = "sales_summary_report.pdf"
-        generate_pdf(summary, filename)
+        pdf_bytes = generate_pdf(summary)
         st.success("PDF Generated Successfully!")
-        with open(filename, "rb") as file:
-            file_bytes = file.read()
-            st.download_button("Download Sales Summary PDF", file_bytes, file_name=filename)
+        st.download_button("Download Sales Summary PDF", pdf_bytes, file_name=filename)
 
-def generate_pdf(df, filename):
+def generate_pdf(df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=10)
@@ -39,7 +36,7 @@ def generate_pdf(df, filename):
     col_width = pdf.w / (len(df.columns) + 1)
 
     for col in df.columns:
-        pdf.cell(col_width, 10, col, border=1)
+        pdf.cell(col_width, 10, str(col), border=1)
     pdf.ln()
 
     for i, row in df.iterrows():
@@ -47,4 +44,7 @@ def generate_pdf(df, filename):
             pdf.cell(col_width, 10, str(item), border=1)
         pdf.ln()
 
-    pdf.output(filename)
+    output = BytesIO()
+    pdf.output(output)
+    pdf_bytes = output.getvalue()
+    return pdf_bytes
