@@ -1,8 +1,5 @@
 streamlit
+pandas
 gspread
 google-auth
-pandas
-pydeck
-plotly
-fpdf2
-
+google-auth-oauthlib
