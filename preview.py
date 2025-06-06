@@ -6,11 +6,29 @@ from barcode.writer import ImageWriter
 from PIL import Image
 import io
 import base64
+import qrcode
 
 def catalog_module():
     st.header("📦 Inventory Catalog")
 
     df = data.load_inventory()
+
+    # --- Customization Section ---
+    with st.expander("⚙️ Customize Catalog View", expanded=False):
+        show_category = st.checkbox("Show Category", value=True)
+        show_price = st.checkbox("Show Price", value=True)
+        show_stock = st.checkbox("Show Stock Badge", value=True)
+        show_barcode = st.checkbox("Show Barcode", value=True)
+        layout_style = st.radio("Card Layout Style", ["Detailed View", "Compact View"], index=0)
+
+        # 🎨 Theme Color Customization
+        color_option = st.selectbox("🎨 Theme Color", ["green", "blue", "purple", "orange", "red"], index=0)
+
+        # 🖼 Image Fit Customization
+        image_fit = st.radio("🖼 Image Fill Mode", ["Contain", "Cover"], index=0)
+
+        # 📦 Barcode Type Customization
+        barcode_type = st.radio("📦 Barcode Type", ["Code128", "QR"], index=0)
 
     # Light background filter bar
     st.markdown("""
@@ -73,6 +91,8 @@ def catalog_module():
     end_idx = start_idx + items_per_page
     page_data = df.iloc[start_idx:end_idx]
 
+    object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
+
     # Display cards
     for i in range(0, len(page_data), columns_per_row):
         cols = st.columns(columns_per_row)
@@ -95,65 +115,69 @@ def catalog_module():
                         <img src="{row['Image URL']}" style="
                             width: 100%; 
                             height: 100%; 
-                            object-fit: contain;
+                            object-fit: {object_fit_value};
                         ">
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Item Name
+                    # Item Name always shown
                     st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
 
-                    # Category
-                    st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
+                    if show_category:
+                        st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
 
-                    # Price
-                    st.markdown(f"<div style='text-align:center; font-weight:bold; color:green; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
+                    if show_price:
+                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
 
-                    # Stock badge
-                    stock_qty = row['Quantity']
-                    if stock_qty == 0:
-                        badge_color = 'red'
-                        badge_label = 'Out of Stock'
-                    elif stock_qty < 5:
-                        badge_color = 'orange'
-                        badge_label = 'Low Stock'
-                    else:
-                        badge_color = 'green'
-                        badge_label = 'In Stock'
+                    if show_stock:
+                        stock_qty = row['Quantity']
+                        if stock_qty == 0:
+                            badge_color = 'red'
+                            badge_label = 'Out of Stock'
+                        elif stock_qty < 5:
+                            badge_color = 'orange'
+                            badge_label = 'Low Stock'
+                        else:
+                            badge_color = 'green'
+                            badge_label = 'In Stock'
 
-                    st.markdown(
-                        f"<div style='background-color:{badge_color}; color:white; text-align:center; "
-                        f"padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
-                        unsafe_allow_html=True
-                    )
+                        st.markdown(
+                            f"<div style='background-color:{badge_color}; color:white; text-align:center; "
+                            f"padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
+                            unsafe_allow_html=True
+                        )
 
-                    # Barcode with fixed box
-                    code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
-                    barcode_img = generate_barcode_image(code_value)
-                    
-                    buffer = io.BytesIO()
-                    barcode_img.save(buffer, format="PNG")
-                    b64_barcode = base64.b64encode(buffer.getvalue()).decode()
+                    if show_barcode:
+                        code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
 
-                    st.markdown(f"""
-                    <div style="
-                        width: 150px; 
-                        height: 80px; 
-                        border-radius: 6px; 
-                        overflow: hidden; 
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center;
-                        border: 1px solid #ddd;
-                        margin: auto;
-                    ">
-                        <img src="data:image/png;base64,{b64_barcode}" style="
-                            width: 100%; 
-                            height: 100%; 
-                            object-fit: contain;
+                        if barcode_type == "Code128":
+                            barcode_img = generate_barcode_image(code_value)
+                        else:
+                            barcode_img = generate_qr_code(code_value)
+
+                        buffer = io.BytesIO()
+                        barcode_img.save(buffer, format="PNG")
+                        b64_barcode = base64.b64encode(buffer.getvalue()).decode()
+
+                        st.markdown(f"""
+                        <div style="
+                            width: 150px; 
+                            height: 80px; 
+                            border-radius: 6px; 
+                            overflow: hidden; 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center;
+                            border: 1px solid #ddd;
+                            margin: auto;
                         ">
-                    </div>
-                    """, unsafe_allow_html=True)
+                            <img src="data:image/png;base64,{b64_barcode}" style="
+                                width: 100%; 
+                                height: 100%; 
+                                object-fit: contain;
+                            ">
+                        </div>
+                        """, unsafe_allow_html=True)
 
     st.write(f"Showing page {page} of {total_pages}")
 
@@ -169,4 +193,12 @@ def generate_barcode_image(code_value):
     Code128(code_value, writer=ImageWriter()).write(barcode_io, options)
     barcode_io.seek(0)
     img = Image.open(barcode_io)
+    return img
+
+# QR code generator function
+def generate_qr_code(code_value):
+    qr = qrcode.QRCode(box_size=2, border=1)
+    qr.add_data(code_value)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
     return img
