@@ -11,60 +11,41 @@ def catalog_module():
 
     df = data.load_inventory()
 
-    # Inject custom CSS for professional filter bar layout
+    # Light background bar for filters
     st.markdown("""
     <style>
-    .filter-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: space-between;
+    div[data-testid="stHorizontalBlock"] {
         background-color: #f8f9fa;
-        padding: 15px;
+        padding: 15px 10px 5px 10px;
         border-radius: 10px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-    .filter-item {
-        flex: 1 1 150px;
-        min-width: 150px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.08);
+        margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # Start filter container
-    st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
+    # Clean horizontal filter layout using native Streamlit columns:
+    col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
 
-    # Each filter inside same flex box
-    with st.container():
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            search = st.text_input("🔎 Search", placeholder="Name, Category, Notes...")
-            st.markdown("</div>", unsafe_allow_html=True)
+    with col1:
+        search = st.text_input("🔎 Search", placeholder="Name, Category, Notes...")
 
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
-            st.markdown("</div>", unsafe_allow_html=True)
+    with col2:
+        category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
 
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
-            st.markdown("</div>", unsafe_allow_html=True)
+    with col3:
+        sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
 
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
-            st.markdown("</div>", unsafe_allow_html=True)
+    with col4:
+        columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
 
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            items_per_page = st.selectbox("📄 Items/Page", [10, 20, 50], index=0)
-            st.markdown("</div>", unsafe_allow_html=True)
+    with col5:
+        items_per_page = st.selectbox("📄 Items/Page", [10, 20, 50], index=0)
 
-        with st.markdown("<div class='filter-item'>", unsafe_allow_html=True):
-            total_items = len(df)
-            total_pages = math.ceil(total_items / items_per_page)
-            page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    # End filter container
-    st.markdown("</div>", unsafe_allow_html=True)
+    with col6:
+        total_items = len(df)
+        total_pages = math.ceil(total_items / items_per_page)
+        page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
 
     # Apply filters
     if search:
@@ -131,7 +112,7 @@ def catalog_module():
 
     st.write(f"Showing page {page} of {total_pages}")
 
-# Barcode function
+# Barcode generator function
 def generate_barcode_image(code_value):
     barcode_io = io.BytesIO()
     options = {
