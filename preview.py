@@ -167,5 +167,5 @@ def generate_catalog_pdf(df, show_category, show_price, show_stock, show_barcode
             pdf.cell(col_width, 10, str(row['Quantity']), border=1)
         pdf.ln()
 
-    pdf_output = io.BytesIO(pdf.output(dest='S').encode('latin1'))
+    pdf_output = io.BytesIO(pdf.output(dest='S'))
     return pdf_output
