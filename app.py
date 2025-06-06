@@ -1,20 +1,26 @@
-import export_pdf
 import streamlit as st
 import preview
 import item
 import mapview
 import data
-import sales_charts
 import sales
 import sales_summary
+import sales_charts
+import export_pdf  # ✅ NEW import for PDF export
 
 st.set_page_config(page_title="Inventory Management System", layout="wide")
 
 menu = st.sidebar.radio("Menu", [
-    "View Inventory", "Item", "Statistics", "Catalog View", 
-    "Map", "Sales", "Sales Summary", "Sales Charts", "Export PDF"
+    "View Inventory", 
+    "Item", 
+    "Statistics", 
+    "Catalog View", 
+    "Map", 
+    "Sales", 
+    "Sales Summary", 
+    "Sales Charts", 
+    "Export PDF"   # ✅ Added new menu option
 ])
-
 
 if menu == "View Inventory":
     df = data.load_inventory()
@@ -44,11 +50,11 @@ elif menu == "Map":
 elif menu == "Sales":
     sales.sales_module()
 
-elif menu == "Export PDF":
-    export_pdf.export_pdf_module()
+elif menu == "Sales Summary":
+    sales_summary.sales_summary_module()
 
 elif menu == "Sales Charts":
     sales_charts.sales_charts_module()
 
-elif menu == "Sales Summary":
-    sales_summary.sales_summary_module()
+elif menu == "Export PDF":
+    export_pdf.export_pdf_module()
