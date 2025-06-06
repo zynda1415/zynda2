@@ -2,7 +2,6 @@ import streamlit as st
 import data
 import pandas as pd
 from fpdf import FPDF
-from io import BytesIO
 
 def export_pdf_module():
     st.header("📄 Export Reports to PDF")
@@ -44,7 +43,6 @@ def generate_pdf(df):
             pdf.cell(col_width, 10, str(item), border=1)
         pdf.ln()
 
-    output = BytesIO()
-    pdf.output(output)
-    pdf_bytes = output.getvalue()
-    return pdf_bytes
+    # ✅ THIS IS THE FULL FIX
+    pdf_output = pdf.output(dest='S').encode('latin-1')
+    return pdf_output
