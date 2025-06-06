@@ -18,6 +18,7 @@ def catalog_module():
     columns_per_row = st.selectbox("🖥️ Columns per row", [1, 2, 3, 4, 5], index=2)
     items_per_page = st.selectbox("📄 Items per page", [10, 20, 50], index=0)
 
+    # Apply Search & Filters
     if search:
         df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
                          or search.lower() in str(row['Category']).lower()
@@ -45,12 +46,16 @@ def catalog_module():
     end_idx = start_idx + items_per_page
     page_data = df.iloc[start_idx:end_idx]
 
+    # Display Cards
     for i in range(0, len(page_data), columns_per_row):
         cols = st.columns(columns_per_row)
         for col, (_, row) in zip(cols, page_data.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
+                    # Image block with fixed height
+                    st.markdown("<div style='height:200px; display:flex; align-items:center; justify-content:center;'>", unsafe_allow_html=True)
                     st.image(row['Image URL'], width=180)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
                     # Product Name
                     st.markdown(
@@ -70,7 +75,7 @@ def catalog_module():
                         unsafe_allow_html=True
                     )
 
-                    # Stock Badge (balanced)
+                    # Stock Badge
                     stock_qty = row['Quantity']
                     if stock_qty == 0:
                         badge_color = 'red'
@@ -88,18 +93,19 @@ def catalog_module():
                         unsafe_allow_html=True
                     )
 
-                    # Barcode Rendering (balanced)
+                    # Barcode Rendering
                     code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
                     barcode_img = generate_barcode_image(code_value)
-                    st.image(barcode_img, use_column_width=False, width=150)
+                    st.image(barcode_img, width=150)
 
     st.write(f"Showing page {page} of {total_pages}")
 
+# Barcode generation function
 def generate_barcode_image(code_value):
     barcode_io = io.BytesIO()
     options = {
-        'module_width': 0.3,  # Thinner bars
-        'module_height': 20,  # Lower barcode height
+        'module_width': 0.3,
+        'module_height': 20,
         'font_size': 8,
         'text_distance': 1,
     }
