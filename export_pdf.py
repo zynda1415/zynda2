@@ -32,17 +32,20 @@ def generate_pdf(df):
     pdf.add_page()
     pdf.set_font("Arial", size=10)
 
+    # Calculate column width
     col_width = pdf.w / (len(df.columns) + 1)
 
+    # Add headers
     for col in df.columns:
         pdf.cell(col_width, 10, str(col), border=1)
     pdf.ln()
 
+    # Add data rows
     for i, row in df.iterrows():
         for item in row:
             pdf.cell(col_width, 10, str(item), border=1)
         pdf.ln()
 
-    # ✅ THIS IS THE FULL FIX
-    pdf_output = pdf.output(dest='S').encode('latin-1')
+    # Fixed PDF output - use bytes() instead of encode()
+    pdf_output = bytes(pdf.output())
     return pdf_output
