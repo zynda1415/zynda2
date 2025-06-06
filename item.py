@@ -1,60 +1,78 @@
-# ---------- item.py ----------
 import streamlit as st
-import pandas as pd
-from data import load_inventory, save_inventory  # Import only what you need
 
-def item_management():
-    st.header("Item Management")
-    df = load_inventory()
+def render_item_section(df, add_item, edit_item, delete_item):
+    st.subheader("Item Management")
 
-    action = st.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
+    item_action = st.sidebar.radio("Item Actions", ["Add Item", "Edit Item", "Delete Item"])
 
-    if action == "Add Item":
+    if item_action == "Add Item":
+        st.subheader("Add New Item")
         with st.form("add_form"):
-            name = st.text_input("Item Name")
+            item_name = st.text_input("Item Name")
             category = st.text_input("Category")
-            quantity = st.number_input("Quantity", 0)
-            purchase_price = st.number_input("Purchase Price", 0.0)
-            sale_price = st.number_input("Sale Price", 0.0)
+            quantity = st.number_input("Quantity", min_value=0, step=1)
+            purchase_price = st.number_input("Purchase Price", min_value=0.0, step=0.01)
+            sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01)
             supplier = st.text_input("Supplier")
-            notes = st.text_input("Notes")
+            notes = st.text_area("Notes")
             image_url = st.text_input("Image URL")
-            submitted = st.form_submit_button("Add")
-            if submitted:
-                new_row = pd.DataFrame([[name, category, quantity, purchase_price, sale_price, supplier, notes, image_url]],
-                                        columns=df.columns)
-                df = pd.concat([df, new_row], ignore_index=True)
-                save_inventory(df)
-                st.success("Item Added Successfully!")
 
-    elif action == "Edit Item":
+            submitted = st.form_submit_button("Add Item")
+
+            if submitted:
+                new_item = {
+                    'Item Name': item_name,
+                    'Category': category,
+                    'Quantity': quantity,
+                    'Purchase Price': purchase_price,
+                    'Sale Price': sale_price,
+                    'Supplier': supplier,
+                    'Notes': notes,
+                    'Image URL': image_url
+                }
+                add_item(new_item)
+                st.success("Item added successfully!")
+
+    elif item_action == "Edit Item":
+        st.subheader("Edit Existing Item")
         if df.empty:
-            st.warning("No items found.")
+            st.warning("No items to edit.")
         else:
-            item_to_edit = st.selectbox("Select item to edit", df['Item Name'])
-            selected_row = df[df['Item Name'] == item_to_edit].iloc[0]
+            item_to_edit = st.selectbox("Select Item to Edit", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
+            selected_row = df.loc[item_to_edit]
 
             with st.form("edit_form"):
-                name = st.text_input("Item Name", selected_row['Item Name'])
-                category = st.text_input("Category", selected_row['Category'])
-                quantity = st.number_input("Quantity", 0, value=int(selected_row['Quantity']))
-                purchase_price = st.number_input("Purchase Price", 0.0, value=float(selected_row['Purchase Price']))
-                sale_price = st.number_input("Sale Price", 0.0, value=float(selected_row['Sale Price']))
-                supplier = st.text_input("Supplier", selected_row['Supplier'])
-                notes = st.text_input("Notes", selected_row['Notes'])
-                image_url = st.text_input("Image URL", selected_row['Image URL'])
-                submitted = st.form_submit_button("Update")
+                item_name = st.text_input("Item Name", value=selected_row['Item Name'])
+                category = st.text_input("Category", value=selected_row['Category'])
+                quantity = st.number_input("Quantity", min_value=0, step=1, value=int(selected_row['Quantity']))
+                purchase_price = st.number_input("Purchase Price", min_value=0.0, step=0.01, value=float(selected_row['Purchase Price']))
+                sale_price = st.number_input("Sale Price", min_value=0.0, step=0.01, value=float(selected_row['Sale Price']))
+                supplier = st.text_input("Supplier", value=selected_row['Supplier'])
+                notes = st.text_area("Notes", value=selected_row['Notes'])
+                image_url = st.text_input("Image URL", value=selected_row['Image URL'])
+
+                submitted = st.form_submit_button("Save Changes")
+
                 if submitted:
-                    df.loc[df['Item Name'] == item_to_edit] = [name, category, quantity, purchase_price, sale_price, supplier, notes, image_url]
-                    save_inventory(df)
+                    updated_item = {
+                        'Item Name': item_name,
+                        'Category': category,
+                        'Quantity': quantity,
+                        'Purchase Price': purchase_price,
+                        'Sale Price': sale_price,
+                        'Supplier': supplier,
+                        'Notes': notes,
+                        'Image URL': image_url
+                    }
+                    edit_item(item_to_edit, updated_item)
                     st.success("Item updated successfully!")
 
-    elif action == "Delete Item":
+    elif item_action == "Delete Item":
+        st.subheader("Delete Item")
         if df.empty:
-            st.warning("No items found.")
+            st.warning("No items to delete.")
         else:
-            item_to_delete = st.selectbox("Select item to delete", df['Item Name'])
+            item_to_delete = st.selectbox("Select Item to Delete", df.index, format_func=lambda x: df.loc[x, 'Item Name'])
             if st.button("Delete"):
-                df = df[df['Item Name'] != item_to_delete]
-                save_inventory(df)
+                delete_item(item_to_delete)
                 st.success("Item deleted successfully!")
