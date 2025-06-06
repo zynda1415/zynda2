@@ -1,4 +1,6 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
+
 import preview
 import item
 import mapview
@@ -7,23 +9,23 @@ import sales
 import sales_summary
 import sales_charts
 import export_pdf
-import clients  # ✅ New: Clients module
+import clients
 
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
-menu = st.sidebar.radio("Menu", [
-    "View Inventory", 
-    "Item", 
-    "Statistics", 
-    "Catalog View", 
-    "Map", 
-    "Sales", 
-    "Sales Summary", 
-    "Sales Charts", 
-    "Export PDF",
-    "Clients Management"  # ✅ New menu option
-])
+# Option Menu in Sidebar
+with st.sidebar:
+    menu = option_menu(
+        "ZYNDA_SYSTEM Menu", 
+        ["View Inventory", "Item", "Statistics", "Catalog View", "Map", 
+         "Sales", "Sales Summary", "Sales Charts", "Export PDF", "Clients Management"],
+        icons=["box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
+               "cash-coin", "clipboard-data", "graph-up-arrow", "file-earmark-pdf", "people-fill"],
+        menu_icon="grid-3x3-gap-fill", 
+        default_index=0
+    )
 
+# Menu Routing
 if menu == "View Inventory":
     df = data.load_inventory()
     st.title("📦 Inventory Management System")
@@ -37,8 +39,7 @@ elif menu == "Statistics":
     total_items = len(inventory_df)
     total_quantity = inventory_df["Quantity"].sum()
     total_value = (inventory_df["Quantity"] * inventory_df["Sale Price"]).sum()
-    st.title("📦 Inventory Management System")
-    st.subheader("Inventory Statistics")
+    st.title("📦 Inventory Statistics")
     st.write(f"Total Items: {total_items}")
     st.write(f"Total Quantity: {total_quantity}")
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
