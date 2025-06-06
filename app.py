@@ -3,7 +3,7 @@ import preview
 import item
 import mapview
 import data
-import sales  # <-- new import
+import sales
 
 st.set_page_config(page_title="Inventory Management System", layout="wide")
 
