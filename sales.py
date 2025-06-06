@@ -1,28 +1,26 @@
 import streamlit as st
+import datetime
 import data
-import pandas as pd
-from datetime import datetime
 
-def sales_management():
-    st.header("Sales Management")
+def sales_module():
+    st.header("🧾 Sales Entry")
+
     inventory_df = data.load_inventory()
-    sales_df = data.load_sales()
+    clients_df = data.load_clients()
 
-    with st.form("sales_form"):
-        item = st.selectbox("Item", options=inventory_df['Item Name'])
-        qty = st.number_input("Quantity Sold", 1)
-        unit_price = st.number_input("Unit Price", 0.0)
-        date = st.date_input("Date", value=datetime.now())
-        submitted = st.form_submit_button("Add Sale")
+    item_name = st.selectbox("Select Item", inventory_df['Item Name'].unique())
+    client_name = st.selectbox("Select Client", clients_df['Client name'].unique())
 
-        if submitted:
-            total_price = qty * unit_price
-            new_sale = pd.DataFrame([[date.strftime("%Y-%m-%d"), item, qty, unit_price, total_price]],
-                                     columns=sales_df.columns)
-            sales_df = pd.concat([sales_df, new_sale], ignore_index=True)
-            data.save_sales(sales_df)
-            st.success("Sale recorded!")
+    today = datetime.date.today()
+    sale_date = st.date_input("Sale Date", today)
 
-            # Update inventory
-            inventory_df.loc[inventory_df['Item Name'] == item, 'Quantity'] -= qty
-            data.save_inventory(inventory_df)
+    # Autofill unit price from inventory
+    unit_price = inventory_df[inventory_df['Item Name'] == item_name]['Sale Price'].values[0]
+    quantity_sold = st.number_input("Quantity Sold", min_value=1, step=1)
+    
+    total_price = unit_price * quantity_sold
+    st.write(f"Total Price: **${total_price:,.2f}**")
+
+    if st.button("Save Sale"):
+        data.save_sale(sale_date.strftime("%Y-%m-%d"), item_name, client_name, quantity_sold, unit_price, total_price)
+        st.success("✅ Sale saved successfully!")
