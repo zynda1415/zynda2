@@ -153,13 +153,13 @@ def export_pdf_module():
     st.subheader("📊 Report Configuration")
     
     report_options = [
-        "📦 Inventory Report",
-        "💰 Sales Summary",
-        "📈 Financial Analysis",
-        "🎯 Executive Summary",
-        "📋 Low Stock Alert",
-        "👥 Customer Analysis",
-        "📊 Category Performance"
+        " Inventory Report",
+        " Sales Summary",
+        " Financial Analysis",
+        " Executive Summary",
+        " Low Stock Alert",
+        " Customer Analysis",
+        " Category Performance"
     ]
     
     report_type = st.selectbox("Select Report Type", report_options)
