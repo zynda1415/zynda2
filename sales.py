@@ -14,7 +14,6 @@ def sales_module():
     today = datetime.date.today()
     sale_date = st.date_input("Sale Date", today)
 
-    # Autofill unit price from inventory
     unit_price = inventory_df[inventory_df['Item Name'] == item_name]['Sale Price'].values[0]
     quantity_sold = st.number_input("Quantity Sold", min_value=1, step=1)
     
