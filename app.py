@@ -1,15 +1,15 @@
 import streamlit as st
 import preview
-import clients
 import item
 import mapview
 import data
 import sales
 import sales_summary
 import sales_charts
-import export_pdf  # ✅ NEW import for PDF export
+import export_pdf
+import clients  # ✅ New: Clients module
 
-st.set_page_config(page_title="Inventory Management System", layout="wide")
+st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
 menu = st.sidebar.radio("Menu", [
     "View Inventory", 
@@ -18,10 +18,10 @@ menu = st.sidebar.radio("Menu", [
     "Catalog View", 
     "Map", 
     "Sales", 
-    "Sales Summary",
-    "Clients Management",
+    "Sales Summary", 
     "Sales Charts", 
-    "Export PDF"   # ✅ Added new menu option
+    "Export PDF",
+    "Clients Management"  # ✅ New menu option
 ])
 
 if menu == "View Inventory":
@@ -63,4 +63,3 @@ elif menu == "Export PDF":
 
 elif menu == "Clients Management":
     clients.clients_module()
-
