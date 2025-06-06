@@ -7,3 +7,4 @@ pandas
 gspread
 google-auth
 google-auth-oauthlib
+streamlit-option-menu
