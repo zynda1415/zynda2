@@ -1,40 +1,38 @@
 import streamlit as st
-import pandas as pd
-import data
-import item
 import preview
+import item
 import mapview
+import data
+import sales  # <-- new import
 
-st.set_page_config(page_title="Inventory Management", layout="wide")
-st.title("📦 Inventory Management System")
+st.set_page_config(page_title="Inventory Management System", layout="wide")
 
-df = data.load_data()
+menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map", "Sales"])
 
-menu = st.sidebar.radio("Menu", ["View Inventory", "Item", "Statistics", "Catalog View", "Map"])
-
-# View Inventory Tab
 if menu == "View Inventory":
-    preview.render_preview(df)
+    df = data.load_inventory()
+    st.title("📦 Inventory Management System")
+    st.dataframe(df)
 
-# Item Management Tab
 elif menu == "Item":
-    item.render_item_section(df, data.add_item, data.edit_item, data.delete_item)
+    item.item_module()
 
-# Statistics Tab
 elif menu == "Statistics":
+    inventory_df = data.load_inventory()
+    total_items = len(inventory_df)
+    total_quantity = inventory_df["Quantity"].sum()
+    total_value = (inventory_df["Quantity"] * inventory_df["Sale Price"]).sum()
+    st.title("📦 Inventory Management System")
     st.subheader("Inventory Statistics")
-    total_items = len(df)
-    total_quantity = df['Quantity'].sum() if not df.empty else 0
-    total_value = (df['Quantity'] * df['Sale Price']).sum() if not df.empty else 0
-
     st.write(f"Total Items: {total_items}")
     st.write(f"Total Quantity: {total_quantity}")
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
 
-# Catalog View Tab
 elif menu == "Catalog View":
-    preview.render_preview(df)
+    preview.catalog_module()
 
-# Map Tab (fully modular)
 elif menu == "Map":
-    mapview.render_map()
+    mapview.map_module()
+
+elif menu == "Sales":
+    sales.sales_module()
