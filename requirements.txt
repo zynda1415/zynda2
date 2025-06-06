@@ -1,6 +1,5 @@
 fpdf2
 plotly
-fpdf
 altair
 streamlit
 pandas
