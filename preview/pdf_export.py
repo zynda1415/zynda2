@@ -3,15 +3,23 @@ from fpdf import FPDF
 import requests
 from PIL import Image
 import os
+from datetime import datetime
 from . import barcode_utils
 
-def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page, logo_path=None, language='EN'):
+def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page, logo_path=None, language='EN', selected_categories=None, selected_brands=None):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     font_path = os.path.join(os.path.dirname(__file__), '..', 'DejaVuSans.ttf')
     pdf.add_font('DejaVu', '', font_path, uni=True)
     pdf.set_font('DejaVu', '', 10)
     pdf.set_auto_page_break(auto=True, margin=10)
 
+    # Apply filters
+    if selected_categories:
+        df = df[df['Category'].isin(selected_categories)]
+    if selected_brands:
+        df = df[df['Brand'].isin(selected_brands)]
+
+    # Cover + Summary Page
     if include_cover_page:
         pdf.add_page()
         if logo_path:
@@ -19,11 +27,19 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
                 pdf.image(logo_path, x=80, y=30, w=50)
             except:
                 pass
-        pdf.set_font('DejaVu', '', 24)
-        pdf.cell(0, 100, translate("ZYNDA_SYSTEM CATALOG", language), align="C", ln=True)
+        pdf.set_font('DejaVu', '', 22)
+        pdf.cell(0, 90, translate("ZYNDA_SYSTEM CATALOG", language), align="C", ln=True)
         pdf.set_font('DejaVu', '', 14)
         pdf.cell(0, 10, translate("Generated Export", language), align="C", ln=True)
+        pdf.ln(10)
+        pdf.set_font('DejaVu', '', 10)
+        pdf.multi_cell(0, 6, f"Total Items: {len(df)}")
+        if selected_categories:
+            pdf.multi_cell(0, 6, f"Categories: {', '.join(selected_categories)}")
+        if selected_brands:
+            pdf.multi_cell(0, 6, f"Brands: {', '.join(selected_brands)}")
 
+    # Export layout
     if export_layout == "Detailed View":
         for _, row in df.iterrows():
             pdf.add_page()
@@ -31,8 +47,9 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
     else:
         grid_export(pdf, df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, language)
 
+    filename = f"catalog_export_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
     output = io.BytesIO(pdf.output(dest="S"))
-    return output
+    return output, filename
 
 def grid_export(pdf, df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, language):
     cols, rows, w, h = 2, 3, 90, 130
@@ -48,11 +65,15 @@ def draw_card(pdf, row, x, y, w, h, show_category, show_price, show_stock, show_
     try:
         response = requests.get(row['Image URL'], timeout=5)
         img = Image.open(io.BytesIO(response.content)).convert("RGB")
-        img = img.resize((int(w-10), int(h//2-10)))
+        box_w, box_h = int(w-10), int(h//2-10)
+        img.thumbnail((box_w, box_h))
         img_buffer = io.BytesIO()
-        img.save(img_buffer, format='JPEG', quality=90)
+        img.save(img_buffer, format='JPEG', quality=95)
         img_buffer.seek(0)
-        pdf.image(img_buffer, x+5, y+5, w-10, h//2-10)
+        img_w, img_h = img.size
+        x_img = x + 5 + (box_w - img_w)//2
+        y_img = y + 5 + (box_h - img_h)//2
+        pdf.image(img_buffer, x=x_img, y=y_img, w=img_w, h=img_h)
     except:
         pass
     pdf.set_xy(x, y+h//2)
@@ -75,7 +96,7 @@ def add_product_card(pdf, row, show_category, show_price, show_stock, show_barco
 def add_barcode(pdf, row, barcode_type, y_offset, x_offset=60):
     code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
     if barcode_type == "Code128":
-        barcode_img = barcode_utils.generate_barcode_image(code_value)
+        barcode_img = barcode_utils.generate_barcode_image(code_value, dpi=300)
     else:
         barcode_img = barcode_utils.generate_qr_code(code_value)
     buffer = io.BytesIO()
