@@ -12,10 +12,10 @@ import sales_charts
 import export_pdf
 import clients
 
-# ✅ Always call page config immediately after imports
+# ✅ Set page config immediately after imports
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
-# ✅ Now start your full Streamlit UI after page config
+# ✅ All UI logic wrapped in main()
 def main():
     with st.sidebar:
         menu = option_menu(
@@ -72,6 +72,6 @@ def main():
     elif menu == "Clients Management":
         clients.clients_module()
 
-# 🚀 Always call main() after config
+# ✅ Always call main() at the end
 if __name__ == "__main__":
     main()
