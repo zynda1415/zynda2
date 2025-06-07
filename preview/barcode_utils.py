@@ -5,9 +5,15 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 import qrcode
 
-def generate_barcode_image(code_value):
+def generate_barcode_image(code_value, dpi=300):
     barcode_io = io.BytesIO()
-    options = {'module_width': 0.3,'module_height': 20,'font_size': 8,'text_distance': 1}
+    options = {
+        'module_width': 0.3,
+        'module_height': 20,
+        'font_size': 8,
+        'text_distance': 1,
+        'dpi': dpi  # ✅ full dpi support
+    }
     Code128(code_value, writer=ImageWriter()).write(barcode_io, options)
     barcode_io.seek(0)
     return Image.open(barcode_io)
