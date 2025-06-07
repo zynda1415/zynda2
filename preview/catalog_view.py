@@ -43,11 +43,13 @@ def catalog_module():
     # Sorting
     df = apply_sort(df, sort_option)
 
-    # PDF Export button
-    if st.button("📄 Export Current Catalog to PDF"):
-        pdf_bytes = pdf_export.generate_catalog_pdf(df, show_category, show_price, show_stock)
+    # Visual PDF Export button (fully upgraded)
+    if st.button("📄 Export Visual Catalog to PDF"):
+        pdf_bytes = pdf_export.generate_catalog_pdf_visual(
+            df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option
+        )
         st.success("✅ PDF Generated Successfully!")
-        st.download_button("📥 Download Catalog PDF", pdf_bytes, file_name="catalog_export.pdf")
+        st.download_button("📥 Download Visual Catalog PDF", pdf_bytes, file_name="catalog_visual_export.pdf")
 
     # Pagination
     start_idx = (page - 1) * items_per_page
