@@ -70,11 +70,11 @@ def grid_export(pdf, df, show_category, show_price, show_stock, show_barcode, ba
         pdf.rect(x, y, card_w, card_h, 'F')
         pdf.set_xy(x+2, y+2)
 
-        name = row.get('Item Name English', '')
+        name = row.get('Item Name', '')
         pdf.set_font('DejaVu', '', 12)
         pdf.multi_cell(card_w-4, 6, name, align="C")
         
-        image_url = row.get('Image', '')
+        image_url = row.get('Image URL', '')
         if image_url:
             try:
                 response = requests.get(image_url)
@@ -94,14 +94,14 @@ def grid_export(pdf, df, show_category, show_price, show_stock, show_barcode, ba
             y_text += 5
         if show_price:
             pdf.set_xy(x+2, y_text)
-            pdf.cell(0, 5, f"Price: {row.get('Sell Price','')}", ln=True)
+            pdf.cell(0, 5, f"Price: {row.get('Sale Price','')}", ln=True)
             y_text += 5
         if show_stock:
             pdf.set_xy(x+2, y_text)
-            pdf.cell(0, 5, f"Stock: {row.get('Stock','')}", ln=True)
+            pdf.cell(0, 5, f"Stock: {row.get('Quantity','')}", ln=True)
             y_text += 5
         if show_barcode:
-            barcode_path = barcode_utils.generate_barcode(row.get('Barcode',''), barcode_type)
+            barcode_path = barcode_utils.generate_barcode(row.get('Code',''), barcode_type)
             if barcode_path:
                 pdf.image(barcode_path, x+25, y_text, w=40, h=15)
                 os.remove(barcode_path)
@@ -110,10 +110,10 @@ def grid_export(pdf, df, show_category, show_price, show_stock, show_barcode, ba
 
 def add_product_card(pdf, row, show_category, show_price, show_stock, show_barcode, barcode_type, color_option):
     pdf.set_font('DejaVu', '', 16)
-    pdf.cell(0, 10, row.get('Item Name English',''), ln=True)
+    pdf.cell(0, 10, row.get('Item Name',''), ln=True)
     pdf.ln(3)
 
-    image_url = row.get('Image','')
+    image_url = row.get('Image URL','')
     if image_url:
         try:
             response = requests.get(image_url)
@@ -129,11 +129,11 @@ def add_product_card(pdf, row, show_category, show_price, show_stock, show_barco
     if show_category:
         pdf.cell(0, 8, f"Category: {row.get('Category','')}", ln=True)
     if show_price:
-        pdf.cell(0, 8, f"Price: {row.get('Sell Price','')}", ln=True)
+        pdf.cell(0, 8, f"Price: {row.get('Sale Price','')}", ln=True)
     if show_stock:
-        pdf.cell(0, 8, f"Stock: {row.get('Stock','')}", ln=True)
+        pdf.cell(0, 8, f"Stock: {row.get('Quantity','')}", ln=True)
     if show_barcode:
-        barcode_path = barcode_utils.generate_barcode(row.get('Barcode',''), barcode_type)
+        barcode_path = barcode_utils.generate_barcode(row.get('Code',''), barcode_type)
         if barcode_path:
             pdf.image(barcode_path, x=80, y=pdf.get_y()+5, w=50, h=20)
             os.remove(barcode_path)
