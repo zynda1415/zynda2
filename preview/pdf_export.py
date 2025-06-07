@@ -2,25 +2,24 @@ import io
 from fpdf import FPDF
 import requests
 from PIL import Image
+import os
 from . import barcode_utils
 
 def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
 
-    # ✅ Corrected font path (relative to current working directory)
-    import os
-font_path = os.path.join(os.path.dirname(__file__), '..', 'DejaVuSans.ttf')
-pdf.add_font('DejaVu', '', font_path, uni=True)
+    # ✅ Corrected font path (dynamic)
+    font_path = os.path.join(os.path.dirname(__file__), '..', 'DejaVuSans.ttf')
+    pdf.add_font('DejaVu', '', font_path, uni=True)
     pdf.set_font('DejaVu', '', 10)
 
     pdf.set_auto_page_break(auto=True, margin=10)
-
 
     # 📝 Cover Page
     if include_cover_page:
         pdf.add_page()
         pdf.set_font('DejaVu', '', 22)
-        pdf.cell(0, 60, "📦 ZYNDA_SYSTEM CATALOG", align="C", ln=True)  # ✅ Now emoji safe!
+        pdf.cell(0, 60, "📦 ZYNDA_SYSTEM CATALOG", align="C", ln=True)  # ✅ Emoji safe
         pdf.set_font('DejaVu', '', 14)
         pdf.cell(0, 10, "Generated Visual Export", align="C", ln=True)
 
