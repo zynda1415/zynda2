@@ -48,11 +48,11 @@ def draw_card(pdf, row, x, y, w, h, show_category, show_price, show_stock, show_
     try:
         response = requests.get(row['Image URL'], timeout=5)
         img = Image.open(io.BytesIO(response.content)).convert("RGB")
-        img.thumbnail((w-10, h//2-10))
+        img = img.resize((int(w-10), int(h//2-10)))
         img_buffer = io.BytesIO()
-        img.save(img_buffer, format='JPEG', quality=70)
+        img.save(img_buffer, format='JPEG', quality=90)
         img_buffer.seek(0)
-        pdf.image(img_buffer, x+5, y+5, w-10, img.size[1]* (w-10)/img.size[0])
+        pdf.image(img_buffer, x+5, y+5, w-10, h//2-10)
     except:
         pass
     pdf.set_xy(x, y+h//2)
