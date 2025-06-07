@@ -8,7 +8,9 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
     pdf = FPDF(orientation='P', unit='mm', format='A4')
 
     # ✅ Corrected font path (relative to current working directory)
-    pdf.add_font('DejaVu', '', '../DejaVuSans.ttf', uni=True)
+    import os
+font_path = os.path.join(os.path.dirname(__file__), '..', 'DejaVuSans.ttf')
+pdf.add_font('DejaVu', '', font_path, uni=True)
     pdf.set_font('DejaVu', '', 10)
 
     pdf.set_auto_page_break(auto=True, margin=10)
