@@ -1,89 +1,121 @@
-from fpdf import FPDF
+import streamlit as st
+import math
+import data
+import io
+import base64
 from PIL import Image
-import requests
-from io import BytesIO
-import barcode
-from barcode.writer import ImageWriter
-import os
+from . import customization, style, barcode_utils, pdf_export
 
-class CatalogPDF(FPDF):
-    def __init__(self):
-        super().__init__(orientation='P', unit='mm', format='A4')
-        self.set_auto_page_break(auto=True, margin=15)
-        self.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
-        self.set_font('DejaVu', '', 10)
+def catalog_module():
+    st.header("\U0001F4E6 Inventory Catalog")
 
-    def header(self):
-        self.set_font('DejaVu', '', 14)
-        self.cell(0, 10, 'Inventory Catalog', ln=True, align='C')
-        self.ln(5)
+    df = data.load_inventory()
 
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('DejaVu', '', 8)
-        self.cell(0, 10, f'Page {self.page_no()}', align='C')
+    (show_category, show_price, show_stock, show_barcode, layout_style, 
+     color_option, image_fit, barcode_type, export_layout, include_cover_page) = customization.customization_controls(df)
 
-    def add_catalog_item(self, item, x, y, w, h):
-        self.rect(x, y, w, h)
-        margin = 3
-        img_w, img_h = w - 2*margin, h * 0.4
+    style.apply_global_styles()
 
-        # Draw image
-        if item['Image']:
-            try:
-                response = requests.get(item['Image'])
-                img = Image.open(BytesIO(response.content))
-                img_path = f"temp_image.jpg"
-                img.save(img_path)
-                self.image(img_path, x + margin, y + margin, img_w, img_h)
-                os.remove(img_path)
-            except:
-                pass
+    col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
+    with col1:
+        search = st.text_input("\U0001F50E Search", placeholder="Name, Category, Notes...")
+    with col2:
+        category_filter = st.selectbox("\U0001F4C2 Category", ["All"] + list(df['Category'].unique()))
+    with col3:
+        sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
+    with col4:
+        columns_per_row = st.selectbox("\U0001F5A5️ Columns", [1, 2, 3, 4, 5], index=2)
+    with col5:
+        items_per_page = st.selectbox("\U0001F4C4 Items/Page", [10, 20, 50], index=0)
+    with col6:
+        total_items = len(df)
+        total_pages = math.ceil(total_items / items_per_page)
+        page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
 
-        # Write text fields
-        self.set_xy(x + margin, y + margin + img_h + 2)
-        self.multi_cell(img_w, 5, item['Item Name (English)'], align='C')
-        self.set_x(x + margin)
-        self.cell(img_w, 5, f"Category: {item['Category 1']}", ln=True, align='C')
-        self.set_x(x + margin)
-        self.cell(img_w, 5, f"Price: ${item['Sell Price']}", ln=True, align='C')
-        self.set_x(x + margin)
-        self.cell(img_w, 5, f"Stock: {item['Stock']} In Stock", ln=True, align='C')
+    if search:
+        df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
+                         or search.lower() in str(row['Category']).lower()
+                         or search.lower() in str(row.get('Notes', '')).lower(), axis=1)]
+    if category_filter != "All":
+        df = df[df['Category'] == category_filter]
 
-        # Barcode
-        if item['Barcode']:
-            code_img = self.generate_barcode_image(item['Barcode'])
-            self.image(code_img, x + w/2 - 15, y + h - 20, 30, 12)
-            os.remove(code_img)
+    df = apply_sort(df, sort_option)
 
-    def generate_barcode_image(self, code):
-        code128 = barcode.get('code128', str(code), writer=ImageWriter())
-        filename = f"barcode_{code}.png"
-        code128.save(filename)
-        return filename
+    if st.button("\U0001F4C4 Export Visual Catalog to PDF"):
+        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+            df, show_category, show_price, show_stock, show_barcode, barcode_type, 
+            color_option, export_layout, include_cover_page, logo_path=None, language='EN',
+            selected_categories=None, selected_brands=None
+        )
+        st.success("✅ PDF Generated Successfully!")
+        st.download_button("\U0001F4E5 Download Visual Catalog PDF", data=pdf_bytes, file_name=filename)
 
-def generate_catalog_pdf_visual(df):
-    pdf = CatalogPDF()
-    pdf.add_page()
+    start_idx = (page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    page_data = df.iloc[start_idx:end_idx]
 
-    cols = 3
-    spacing = 10
-    item_w = (210 - (cols + 1) * spacing) / cols
-    item_h = 90
+    render_cards(page_data, columns_per_row, show_category, show_price, show_stock, show_barcode,
+                 color_option, image_fit, barcode_type)
 
-    x_start = spacing
-    y_start = 30
-    x = x_start
-    y = y_start
+def apply_sort(df, sort_option):
+    if sort_option == "Item Name (A-Z)":
+        return df.sort_values(by='Item Name', ascending=True)
+    elif sort_option == "Price (Low-High)":
+        return df.sort_values(by='Sale Price', ascending=True)
+    elif sort_option == "Price (High-Low)":
+        return df.sort_values(by='Sale Price', ascending=False)
+    elif sort_option == "Stock (Low-High)":
+        return df.sort_values(by='Quantity', ascending=True)
+    elif sort_option == "Stock (High-Low)":
+        return df.sort_values(by='Quantity', ascending=False)
+    return df
 
-    for idx, row in df.iterrows():
-        pdf.add_catalog_item(row, x, y, item_w, item_h)
-        x += item_w + spacing
-        if (idx + 1) % cols == 0:
-            x = x_start
-            y += item_h + spacing
-            if y + item_h + spacing > 297 - 20:
-                pdf.add_page()
-                y = y_start
+def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
+    object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
+    for i in range(0, len(df), columns_per_row):
+        cols = st.columns(columns_per_row)
+        for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
+            with col:
+                with st.container():
+                    st.markdown(f"""
+                    <div style="
+                        width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
+                        display: flex; align-items: center; justify-content: center;
+                        border: 1px solid #ddd; margin: auto;">
+                        <img src="{row['Image URL']}" style="width: 100%; height: 100%; object-fit: {object_fit_value};">
+                    </div>
+                    """, unsafe_allow_html=True)
 
-    return pdf.output(dest='S').encode('latin1')
+                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
+
+                    if show_category:
+                        st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
+                    if show_price:
+                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
+                    if show_stock:
+                        stock_qty = row['Quantity']
+                        badge_color, badge_label = get_stock_badge(stock_qty)
+                        st.markdown(
+                            f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
+                            unsafe_allow_html=True)
+
+                    if show_barcode:
+                        code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
+                        if barcode_type == "Code128":
+                            barcode_img = barcode_utils.generate_barcode_image(code_value)
+                        else:
+                            barcode_img = barcode_utils.generate_qr_code(code_value)
+                        b64_barcode = barcode_utils.encode_image_to_base64(barcode_img)
+                        st.markdown(f"""
+                        <div style="width: 150px; height: 80px; border-radius: 6px; overflow: hidden; 
+                        display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; margin: auto;">
+                        <img src="data:image/png;base64,{b64_barcode}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>""", unsafe_allow_html=True)
+
+def get_stock_badge(stock_qty):
+    if stock_qty == 0:
+        return 'red', 'Out of Stock'
+    elif stock_qty < 5:
+        return 'orange', 'Low Stock'
+    else:
+        return 'green', 'In Stock'
