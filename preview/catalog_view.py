@@ -1,0 +1,122 @@
+import streamlit as st
+import math
+import data
+
+from . import customization, style, barcode_utils, pdf_export
+
+def catalog_module():
+    st.header("📦 Inventory Catalog")
+
+    df = data.load_inventory()
+
+    # Load customization controls
+    (show_category, show_price, show_stock, show_barcode, layout_style, 
+     color_option, image_fit, barcode_type) = customization.customization_controls(df)
+
+    style.apply_global_styles()
+
+    # Filters
+    col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
+    with col1:
+        search = st.text_input("🔎 Search", placeholder="Name, Category, Notes...")
+    with col2:
+        category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
+    with col3:
+        sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
+    with col4:
+        columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
+    with col5:
+        items_per_page = st.selectbox("📄 Items/Page", [10, 20, 50], index=0)
+    with col6:
+        total_items = len(df)
+        total_pages = math.ceil(total_items / items_per_page)
+        page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
+
+    # Apply filters
+    if search:
+        df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
+                         or search.lower() in str(row['Category']).lower()
+                         or search.lower() in str(row.get('Notes', '')).lower(), axis=1)]
+    if category_filter != "All":
+        df = df[df['Category'] == category_filter]
+
+    # Sorting
+    df = apply_sort(df, sort_option)
+
+    # PDF Export button
+    if st.button("📄 Export Current Catalog to PDF"):
+        pdf_bytes = pdf_export.generate_catalog_pdf(df, show_category, show_price, show_stock)
+        st.success("✅ PDF Generated Successfully!")
+        st.download_button("📥 Download Catalog PDF", pdf_bytes, file_name="catalog_export.pdf")
+
+    # Pagination
+    start_idx = (page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    page_data = df.iloc[start_idx:end_idx]
+
+    render_cards(page_data, columns_per_row, show_category, show_price, show_stock, show_barcode,
+                 color_option, image_fit, barcode_type)
+
+def apply_sort(df, sort_option):
+    if sort_option == "Item Name (A-Z)":
+        return df.sort_values(by='Item Name', ascending=True)
+    elif sort_option == "Price (Low-High)":
+        return df.sort_values(by='Sale Price', ascending=True)
+    elif sort_option == "Price (High-Low)":
+        return df.sort_values(by='Sale Price', ascending=False)
+    elif sort_option == "Stock (Low-High)":
+        return df.sort_values(by='Quantity', ascending=True)
+    elif sort_option == "Stock (High-Low)":
+        return df.sort_values(by='Quantity', ascending=False)
+    return df
+
+def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
+    object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
+    for i in range(0, len(df), columns_per_row):
+        cols = st.columns(columns_per_row)
+        for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
+            with col:
+                with st.container():
+                    # Image box
+                    st.markdown(f"""
+                    <div style="
+                        width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
+                        display: flex; align-items: center; justify-content: center;
+                        border: 1px solid #ddd; margin: auto;">
+                        <img src="{row['Image URL']}" style="width: 100%; height: 100%; object-fit: {object_fit_value};">
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
+
+                    if show_category:
+                        st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
+                    if show_price:
+                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
+                    if show_stock:
+                        stock_qty = row['Quantity']
+                        badge_color, badge_label = get_stock_badge(stock_qty)
+                        st.markdown(
+                            f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
+                            unsafe_allow_html=True)
+
+                    if show_barcode:
+                        code_value = str(row['Code']) if 'Code' in row else str(row['Item Name'])
+                        if barcode_type == "Code128":
+                            barcode_img = barcode_utils.generate_barcode_image(code_value)
+                        else:
+                            barcode_img = barcode_utils.generate_qr_code(code_value)
+                        b64_barcode = barcode_utils.encode_image_to_base64(barcode_img)
+                        st.markdown(f"""
+                        <div style="width: 150px; height: 80px; border-radius: 6px; overflow: hidden; 
+                        display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; margin: auto;">
+                        <img src="data:image/png;base64,{b64_barcode}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>""", unsafe_allow_html=True)
+
+def get_stock_badge(stock_qty):
+    if stock_qty == 0:
+        return 'red', 'Out of Stock'
+    elif stock_qty < 5:
+        return 'orange', 'Low Stock'
+    else:
+        return 'green', 'In Stock'
