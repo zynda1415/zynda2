@@ -6,15 +6,19 @@ from . import barcode_utils
 
 def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
+
+    # ✅ Add Unicode font (DejaVuSans.ttf must be present in your app)
+    pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+    pdf.set_font('DejaVu', '', 10)
+
     pdf.set_auto_page_break(auto=True, margin=10)
-    pdf.set_font("Arial", size=10)
 
     # 📝 Cover Page
     if include_cover_page:
         pdf.add_page()
-        pdf.set_font("Arial", "B", 22)
-        pdf.cell(0, 60, "📦 ZYNDA_SYSTEM CATALOG", align="C", ln=True)
-        pdf.set_font("Arial", "", 14)
+        pdf.set_font('DejaVu', '', 22)
+        pdf.cell(0, 60, "📦 ZYNDA_SYSTEM CATALOG", align="C", ln=True)  # ✅ Now emoji safe!
+        pdf.set_font('DejaVu', '', 14)
         pdf.cell(0, 10, "Generated Visual Export", align="C", ln=True)
 
     if export_layout == "Detailed View":
@@ -45,10 +49,10 @@ def add_product_card(pdf, row, show_category, show_price, show_stock, show_barco
 
     y_position = 110
     pdf.set_xy(10, y_position)
-    pdf.set_font("Arial", "B", 14)
+    pdf.set_font('DejaVu', '', 14)
     pdf.cell(0, 10, f"{row['Item Name']}", ln=True, align="C")
 
-    pdf.set_font("Arial", "", 12)
+    pdf.set_font('DejaVu', '', 12)
     if show_category:
         pdf.cell(0, 8, f"Category: {row['Category']}", ln=True, align="C")
     if show_price:
@@ -74,10 +78,10 @@ def add_product_compact(pdf, row, x_pos, show_category, show_price, show_stock, 
         pass
 
     pdf.set_xy(x_pos, 75)
-    pdf.set_font("Arial", "B", 11)
+    pdf.set_font('DejaVu', '', 11)
     pdf.multi_cell(85, 6, f"{row['Item Name']}", align="C")
 
-    pdf.set_font("Arial", "", 10)
+    pdf.set_font('DejaVu', '', 10)
     if show_category:
         pdf.multi_cell(85, 5, f"Category: {row['Category']}", align="C")
     if show_price:
