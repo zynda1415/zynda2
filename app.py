@@ -1,7 +1,10 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
+# Modularized preview system
 import preview.catalog_view as catalog
+
+# Existing modules
 import item
 import mapview
 import data
@@ -13,17 +16,23 @@ import clients
 
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
+# Sidebar Menu using option_menu
 with st.sidebar:
     menu = option_menu(
         "ZYNDA_SYSTEM Menu", 
-        ["View Inventory", "Item", "Statistics", "Catalog View", "Map", 
-         "Sales", "Sales Summary", "Sales Charts", "Export PDF", "Clients Management"],
-        icons=["box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
-               "cash-coin", "clipboard-data", "graph-up-arrow", "file-earmark-pdf", "people-fill"],
+        [
+            "View Inventory", "Item", "Statistics", "Catalog View", "Map", 
+            "Sales", "Sales Summary", "Sales Charts", "Export PDF", "Clients Management"
+        ],
+        icons=[
+            "box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
+            "cash-coin", "clipboard-data", "graph-up-arrow", "file-earmark-pdf", "people-fill"
+        ],
         menu_icon="grid-3x3-gap-fill", 
         default_index=0
     )
 
+# Page Routing
 if menu == "View Inventory":
     df = data.load_inventory()
     st.title("📦 Inventory Management System")
