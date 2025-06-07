@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from . import barcode_utils
 
+# ✅ Corrected function header with full v2.0 parameters
 def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page, logo_path=None, language='EN', selected_categories=None, selected_brands=None):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     font_path = os.path.join(os.path.dirname(__file__), '..', 'DejaVuSans.ttf')
@@ -13,13 +14,11 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
     pdf.set_font('DejaVu', '', 10)
     pdf.set_auto_page_break(auto=True, margin=10)
 
-    # Apply filters if provided
     if selected_categories:
         df = df[df['Category'].isin(selected_categories)]
     if selected_brands:
         df = df[df['Brand'].isin(selected_brands)]
 
-    # Cover Page
     if include_cover_page:
         pdf.add_page()
         if logo_path:
@@ -35,7 +34,6 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
         pdf.set_font('DejaVu', '', 10)
         pdf.multi_cell(0, 6, f"Total Items: {len(df)}")
 
-    # Export layout
     if export_layout == "Detailed View":
         for _, row in df.iterrows():
             pdf.add_page()
