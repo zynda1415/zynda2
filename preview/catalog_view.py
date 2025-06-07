@@ -48,7 +48,7 @@ def catalog_module():
             selected_categories=None, selected_brands=None
         )
         st.success("✅ PDF Generated Successfully!")
-        st.download_button("\U0001F4E5 Download Visual Catalog PDF", pdf_bytes, file_name=filename)
+        st.download_button("\U0001F4E5 Download Visual Catalog PDF", data=pdf_bytes, file_name=filename)
 
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
