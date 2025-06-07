@@ -1,38 +1,37 @@
 import streamlit as st
 import math
 import data
-
+import io
+import base64
+from PIL import Image
 from . import customization, style, barcode_utils, pdf_export
 
 def catalog_module():
-    st.header("📦 Inventory Catalog")
+    st.header("\U0001F4E6 Inventory Catalog")
 
     df = data.load_inventory()
 
-    # Load customization controls (now 10 values)
     (show_category, show_price, show_stock, show_barcode, layout_style, 
      color_option, image_fit, barcode_type, export_layout, include_cover_page) = customization.customization_controls(df)
 
     style.apply_global_styles()
 
-    # Filters
     col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.7, 1.7, 1.2, 1.2, 1.2])
     with col1:
-        search = st.text_input("🔎 Search", placeholder="Name, Category, Notes...")
+        search = st.text_input("\U0001F50E Search", placeholder="Name, Category, Notes...")
     with col2:
-        category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
+        category_filter = st.selectbox("\U0001F4C2 Category", ["All"] + list(df['Category'].unique()))
     with col3:
         sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
     with col4:
-        columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
+        columns_per_row = st.selectbox("\U0001F5A5️ Columns", [1, 2, 3, 4, 5], index=2)
     with col5:
-        items_per_page = st.selectbox("📄 Items/Page", [10, 20, 50], index=0)
+        items_per_page = st.selectbox("\U0001F4C4 Items/Page", [10, 20, 50], index=0)
     with col6:
         total_items = len(df)
         total_pages = math.ceil(total_items / items_per_page)
         page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
 
-    # Apply filters
     if search:
         df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
                          or search.lower() in str(row['Category']).lower()
@@ -40,18 +39,17 @@ def catalog_module():
     if category_filter != "All":
         df = df[df['Category'] == category_filter]
 
-    # Sorting
     df = apply_sort(df, sort_option)
 
-    # Visual PDF Export button
-    if st.button("📄 Export Visual Catalog to PDF"):
-        pdf_bytes = pdf_export.generate_catalog_pdf_visual(
-            df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page
+    if st.button("\U0001F4C4 Export Visual Catalog to PDF"):
+        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+            df, show_category, show_price, show_stock, show_barcode, barcode_type, 
+            color_option, export_layout, include_cover_page, logo_path=None, language='EN',
+            selected_categories=None, selected_brands=None
         )
         st.success("✅ PDF Generated Successfully!")
-        st.download_button("📥 Download Visual Catalog PDF", pdf_bytes, file_name="catalog_visual_export.pdf")
+        st.download_button("\U0001F4E5 Download Visual Catalog PDF", data=pdf_bytes, file_name=filename)
 
-    # Pagination
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
     page_data = df.iloc[start_idx:end_idx]
