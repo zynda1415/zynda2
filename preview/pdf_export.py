@@ -13,13 +13,11 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
     pdf.set_font('DejaVu', '', 10)
     pdf.set_auto_page_break(auto=True, margin=10)
 
-    # Apply filters
     if selected_categories:
         df = df[df['Category'].isin(selected_categories)]
     if selected_brands:
         df = df[df['Brand'].isin(selected_brands)]
 
-    # Cover + Summary Page
     if include_cover_page:
         pdf.add_page()
         if logo_path:
@@ -39,7 +37,6 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
         if selected_brands:
             pdf.multi_cell(0, 6, f"Brands: {', '.join(selected_brands)}")
 
-    # Export layout
     if export_layout == "Detailed View":
         for _, row in df.iterrows():
             pdf.add_page()
