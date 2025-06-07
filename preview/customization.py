@@ -11,4 +11,7 @@ def customization_controls(df):
         image_fit = st.radio("🖼 Image Fill Mode", ["Contain", "Cover"], index=0)
         barcode_type = st.radio("📦 Barcode Type", ["Code128", "QR"], index=0)
 
-    return show_category, show_price, show_stock, show_barcode, layout_style, color_option, image_fit, barcode_type
+ return (
+    show_category, show_price, show_stock, show_barcode, layout_style, 
+    color_option, image_fit, barcode_type, export_layout, include_cover_page
+)
