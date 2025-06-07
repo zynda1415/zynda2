@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-import preview
+import preview.catalog_view as catalog
 import item
 import mapview
 import data
@@ -13,7 +13,6 @@ import clients
 
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
-# Option Menu in Sidebar
 with st.sidebar:
     menu = option_menu(
         "ZYNDA_SYSTEM Menu", 
@@ -25,7 +24,6 @@ with st.sidebar:
         default_index=0
     )
 
-# Menu Routing
 if menu == "View Inventory":
     df = data.load_inventory()
     st.title("📦 Inventory Management System")
@@ -45,7 +43,7 @@ elif menu == "Statistics":
     st.write(f"Total Inventory Value: ${total_value:,.2f}")
 
 elif menu == "Catalog View":
-    preview.catalog_module()
+    catalog.catalog_module()
 
 elif menu == "Map":
     mapview.map_module()
