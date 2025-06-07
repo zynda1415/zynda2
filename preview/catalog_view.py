@@ -9,9 +9,9 @@ def catalog_module():
 
     df = data.load_inventory()
 
-    # Load customization controls
+    # Load customization controls (now 10 values)
     (show_category, show_price, show_stock, show_barcode, layout_style, 
-     color_option, image_fit, barcode_type) = customization.customization_controls(df)
+     color_option, image_fit, barcode_type, export_layout, include_cover_page) = customization.customization_controls(df)
 
     style.apply_global_styles()
 
@@ -43,10 +43,10 @@ def catalog_module():
     # Sorting
     df = apply_sort(df, sort_option)
 
-    # Visual PDF Export button (fully upgraded)
+    # Visual PDF Export button
     if st.button("📄 Export Visual Catalog to PDF"):
         pdf_bytes = pdf_export.generate_catalog_pdf_visual(
-            df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option
+            df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page
         )
         st.success("✅ PDF Generated Successfully!")
         st.download_button("📥 Download Visual Catalog PDF", pdf_bytes, file_name="catalog_visual_export.pdf")
@@ -79,7 +79,6 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
         for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    # Image box
                     st.markdown(f"""
                     <div style="
                         width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
