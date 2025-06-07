@@ -1,5 +1,6 @@
 import io
 import os
+import base64
 from PIL import Image
 from barcode import Code128
 from barcode.writer import ImageWriter
@@ -40,3 +41,14 @@ def generate_qr_code(code_value):
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     return img.convert("RGB")
+
+def encode_image_to_base64(img):
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    b64_img = base64.b64encode(buffer.getvalue()).decode()
+    return b64_img
+
+def load_image_if_path(barcode_img):
+    if isinstance(barcode_img, str) and os.path.exists(barcode_img):
+        return Image.open(barcode_img)
+    return barcode_img
