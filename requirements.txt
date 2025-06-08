@@ -5,3 +5,4 @@ google-auth
 python-barcode[images]
 Pillow
 streamlit-option-menu
+fpdf
