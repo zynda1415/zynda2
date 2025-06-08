@@ -1,4 +1,5 @@
-fpdf2
+python-barcode[images]
+Pillowfpdf2
 plotly
 altair
 streamlit
