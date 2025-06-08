@@ -41,7 +41,7 @@ def main():
         item.item_module()
 
     elif menu == "Statistics":
-    statistics_view.statistics_module()
+        statistics_view.statistics_module()
 
     elif menu == "Catalog View":
         catalog.catalog_module()
