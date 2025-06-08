@@ -11,7 +11,7 @@ def inventory_view_module():
     st.sidebar.header("🔎 Filters")
     search_query = st.sidebar.text_input("Search").lower()
 
-    categories = ["All"] + sorted(df['Category 1'].dropna().unique())
+    categories = ["All"] + sorted(df['Category'].dropna().unique())
     selected_category = st.sidebar.selectbox("Category", categories)
 
     brands = ["All"] + sorted(df['Brand'].dropna().unique())
@@ -28,7 +28,7 @@ def inventory_view_module():
         filtered_df = filtered_df[mask]
 
     if selected_category != "All":
-        filtered_df = filtered_df[filtered_df['Category 1'] == selected_category]
+        filtered_df = filtered_df[filtered_df['Category'] == selected_category]
 
     if selected_brand != "All":
         filtered_df = filtered_df[filtered_df['Brand'] == selected_brand]
