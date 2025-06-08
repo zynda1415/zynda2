@@ -1,7 +1,10 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-# Import all modules
+# Core modules
+import data
+
+# Functional modules
 import modules.item as item
 import modules.clients as clients
 import modules.invoice as invoice
@@ -9,10 +12,15 @@ import modules.sales as sales
 import modules.sales_summary as sales_summary
 import modules.sales_charts as sales_charts
 import modules.mapview as mapview
+
+# Views
 import views.inventory_view as inventory_view
-import data
+import views.statistics_view as statistics_view
+
+# Preview catalog module (fix import)
 import preview.catalog_view as catalog
 
+# Streamlit config
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
 def main():
@@ -31,14 +39,7 @@ def main():
         item.item_module()
 
     elif menu == "Statistics":
-        inventory_df = data.load_inventory()
-        total_items = len(inventory_df)
-        total_quantity = inventory_df["Quantity"].sum()
-        total_value = (inventory_df["Quantity"] * inventory_df["Sale Price"]).sum()
-        st.title("📦 Inventory Statistics")
-        st.write(f"Total Items: {total_items}")
-        st.write(f"Total Quantity: {total_quantity}")
-        st.write(f"Total Inventory Value: ${total_value:,.2f}")
+        statistics_view.statistics_module()
 
     elif menu == "Catalog View":
         catalog.catalog_module()
