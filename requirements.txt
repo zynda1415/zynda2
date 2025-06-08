@@ -1,8 +1,12 @@
+fpdf2
+plotly
+altair
 streamlit
 pandas
 gspread
 google-auth
-python-barcode[images]
-Pillow
+google-auth-oauthlib
 streamlit-option-menu
-fpdf
+python-barcode
+pillow
+qrcode
