@@ -2,32 +2,30 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 # Import all modules
-import preview.catalog_view as catalog
-import item
-import mapview
+import modules.item as item
+import modules.clients as clients
+import modules.invoice as invoice
+import modules.sales as sales
+import modules.sales_summary as sales_summary
+import modules.sales_charts as sales_charts
+import modules.mapview as mapview
+import views.inventory_view as inventory_view
 import data
-import sales
-import sales_summary
-import sales_charts
-import clients
-import invoice   # ✅ New Invoice Module
+import preview.catalog_view as catalog
 
-# Set page config
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
 def main():
     with st.sidebar:
         menu = option_menu("ZYNDA_SYSTEM Menu", 
             ["View Inventory", "Item", "Statistics", "Catalog View", "Map", 
-             "Sales", "Sales Summary", "Sales Charts", "Clients Management", "Invoices"],   # ✅ Added Invoices
+             "Sales", "Sales Summary", "Sales Charts", "Clients Management", "Invoices"],
             icons=["box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
                    "cash-coin", "clipboard-data", "graph-up-arrow", "people-fill", "file-earmark-text"],
             menu_icon="grid-3x3-gap-fill", default_index=0)
 
     if menu == "View Inventory":
-        df = data.load_inventory()
-        st.title("📦 Inventory Management System")
-        st.dataframe(df)
+        inventory_view.inventory_view_module()
 
     elif menu == "Item":
         item.item_module()
@@ -61,7 +59,7 @@ def main():
         clients.clients_module()
 
     elif menu == "Invoices":
-        invoice.render_invoice_section()   # ✅ Call Invoice module
+        invoice.render_invoice_section()
 
 if __name__ == "__main__":
     main()
