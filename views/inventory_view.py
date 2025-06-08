@@ -8,14 +8,15 @@ def inventory_view_module():
 
     df = data.load_inventory()
 
-    # Clean price column to avoid TypeError
+    # Clean Sale Price column
     df['Sale Price'] = pd.to_numeric(df['Sale Price'], errors='coerce').fillna(0)
 
-    # Sidebar filters
+    # Clean Supplier column to string (IMPORTANT FIX)
+    df['Supplier'] = df['Supplier'].astype(str)
+
     st.sidebar.header("🔎 Filters")
 
     search_query = st.sidebar.text_input("Search").lower()
-
     categories = ["All"] + sorted(df['Category'].dropna().unique())
     selected_category = st.sidebar.selectbox("Category", categories)
 
