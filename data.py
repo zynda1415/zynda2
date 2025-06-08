@@ -38,3 +38,14 @@ def load_sales():
 def save_sale(date, item, name, quantity_sold, unit_price, total_price):
     ws = sheet.worksheet("Sales")
     ws.append_row([date, item, name, quantity_sold, unit_price, total_price])
+
+def load_invoices():
+    ws = sheet.worksheet("Invoices")
+    data = ws.get_all_records()
+    df = pd.DataFrame(data)
+    return df
+
+def add_invoice(invoice_data):
+    ws = sheet.worksheet("Invoices")
+    ws.append_row(list(invoice_data.values()))
+
