@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 import preview.catalog_view as catalog
-import item, mapview, data, sales, sales_summary, sales_charts, clients
+import item, mapview, data, sales, sales_summary, sales_charts, clients, inventory_view
 
 st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
