@@ -6,7 +6,7 @@ import data
 # Views
 import views.inventory_view as inventory_view
 import views.statistics_view as statistics_view
-import preview.catalog_view as catalog
+import views.catalog_view as catalog
 
 # Modules
 import modules.item as item
