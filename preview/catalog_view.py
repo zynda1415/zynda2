@@ -23,7 +23,7 @@ def catalog_module():
         search = st.text_input("🔎 Search", placeholder="Name, Category, Notes...")
 
     with col2:
-        category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category 1'].unique()))
+        category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
 
     with col3:
         sort_option = st.selectbox("↕️ Sort by", ["Name", "Price (High)", "Price (Low)"])
@@ -39,7 +39,7 @@ def catalog_module():
         filtered_df = filtered_df[filtered_df.apply(lambda row: search_lower in str(row).lower(), axis=1)]
 
     if category_filter != "All":
-        filtered_df = filtered_df[filtered_df['Category 1'] == category_filter]
+        filtered_df = filtered_df[filtered_df['Category'] == category_filter]
 
     # Sorting
     if sort_option == "Price (High)":
@@ -70,7 +70,7 @@ def render_cards(df, show_category, show_price, show_stock, show_barcode, color_
         st.subheader(row['Item Name (English)'])
         st.write(f"Brand: {row['Brand']}")
         if show_category:
-            st.write(f"Category: {row['Category 1']}")
+            st.write(f"Category: {row['Category']}")
         if show_price:
             st.write(f"Price: ${row['Sell Price']}")
         if show_stock:
