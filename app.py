@@ -1,6 +1,6 @@
 import streamlit as st
 import item
-import client
+import clients
 import invoice
 import inventory_view  # ✅ NEW Inventory View Module
 
