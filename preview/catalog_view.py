@@ -4,7 +4,7 @@ import data
 import preview.customization as customization
 import preview.style as style
 import preview.barcode_utils as barcode_utils
-import preview.pdf_export as pdf_export
+import utils.pdf_export as pdf_export
 
 def catalog_module():
     st.header("📦 Inventory Catalog")
