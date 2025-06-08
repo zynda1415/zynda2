@@ -41,18 +41,15 @@ def catalog_module():
     if category_filter != "All":
         filtered_df = filtered_df[filtered_df['Category'] == category_filter]
 
-    # Sorting
     if sort_option == "Price (High)":
-        filtered_df = filtered_df.sort_values(by="Sell Price", ascending=False)
+        filtered_df = filtered_df.sort_values(by="Sale Price", ascending=False)
     elif sort_option == "Price (Low)":
-        filtered_df = filtered_df.sort_values(by="Sell Price", ascending=True)
+        filtered_df = filtered_df.sort_values(by="Sale Price", ascending=True)
 
     st.write(f"### Filtered Items ({len(filtered_df)} items)")
 
-    # Show catalog cards
     render_cards(filtered_df, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type)
 
-    # Export to PDF
     if export_button:
         pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
             filtered_df,
@@ -63,18 +60,16 @@ def catalog_module():
         )
         st.download_button("Download PDF", pdf_bytes, file_name=filename)
 
-
-# Rendering logic
 def render_cards(df, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
     for idx, row in df.iterrows():
-        st.subheader(row['Item Name (English)'])
-        st.write(f"Brand: {row['Brand']}")
+        st.subheader(row['Item Name'])   # ✅ FIXED COLUMN NAME
+        st.write(f"Supplier: {row['Supplier']}")
         if show_category:
             st.write(f"Category: {row['Category']}")
         if show_price:
-            st.write(f"Price: ${row['Sell Price']}")
+            st.write(f"Price: ${row['Sale Price']}")
         if show_stock:
-            st.write(f"Stock: {row['Stock']}")
+            st.write(f"Stock: {row['Quantity']}")  # You actually have Quantity column
         if show_barcode:
             b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
             st.image(b64_barcode)
