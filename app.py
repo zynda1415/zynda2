@@ -4,7 +4,9 @@ from streamlit_option_menu import option_menu
 # Core modules
 import data
 
+
 # Functional modules
+import views.statistics_view as statistics_view
 import modules.item as item
 import modules.clients as clients
 import modules.invoice as invoice
@@ -39,7 +41,7 @@ def main():
         item.item_module()
 
     elif menu == "Statistics":
-        statistics_view.statistics_module()
+    statistics_view.statistics_module()
 
     elif menu == "Catalog View":
         catalog.catalog_module()
