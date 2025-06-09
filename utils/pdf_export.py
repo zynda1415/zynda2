@@ -35,63 +35,86 @@ def generate_barcode_image(barcode_data, barcode_type='Code128'):
     except:
         return None
 
-# Main function to generate luxury-style catalog
-def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page, logo_path=None, language='EN', selected_categories=None, selected_brands=None):
-
-    pdf = FPDF(orientation='P', unit='mm', format='A4')
+# Main visual catalog function
+def generate_catalog_pdf_visual(
+    df, show_image, show_name, show_category, show_price, show_stock, show_notes, show_barcode,
+    barcode_type, paper_orientation, columns_per_row, rows_per_page, include_cover_page
+):
+    pdf = FPDF(orientation=paper_orientation, unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
-    pdf.set_font('DejaVu', '', 10)
+    pdf.set_font('DejaVu', '', 9)
     pdf.set_auto_page_break(auto=True, margin=10)
+
+    page_width = 297 if paper_orientation == "L" else 210
+    page_height = 210 if paper_orientation == "L" else 297
 
     if include_cover_page:
         pdf.add_page()
-        pdf.set_font('DejaVu', '', 28)
-        pdf.cell(0, 100, '📦 Inventory Catalog', ln=True, align='C')
+        pdf.set_font('DejaVu', '', 26)
+        pdf.cell(0, 120, '📦 Inventory Catalog', ln=True, align='C')
 
+    cell_width = (page_width - 20) / columns_per_row
+    cell_height = (page_height - 20) / rows_per_page
+
+    counter = 0
     for index, row in df.iterrows():
-        pdf.add_page()
+        if counter % (columns_per_row * rows_per_page) == 0:
+            pdf.add_page()
 
-        # Image Section (top)
-        image_url = row.get('Image URL', '')
-        img = download_image(image_url)
-        if img:
-            img.thumbnail((180, 180))
-            img_buffer = io.BytesIO()
-            img.save(img_buffer, format='PNG')
-            img_buffer.seek(0)
-            pdf.image(img_buffer, x=15, y=20, w=180, h=0)
+        x = 10 + (counter % columns_per_row) * cell_width
+        y = 10 + ((counter // columns_per_row) % rows_per_page) * cell_height
+        pdf.set_xy(x, y)
+        pdf.set_fill_color(245, 245, 245)
+        pdf.rect(x, y, cell_width - 5, cell_height - 5, 'F')
 
-        # Item Name (big title)
-        pdf.set_font('DejaVu', '', 20)
-        name = row.get('Item Name', '')
-        pdf.ln(95)
-        pdf.multi_cell(0, 12, name, align='C')
+        inner_x = x + 5
+        inner_y = y + 5
 
-        # Details Section
-        pdf.set_font('DejaVu', '', 13)
-        pdf.ln(5)
+        if show_image:
+            image_url = row.get('Image URL', '')
+            img = download_image(image_url)
+            if img:
+                img.thumbnail((int(cell_width-20), int(cell_height/3)))
+                img_buffer = io.BytesIO()
+                img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                pdf.image(img_buffer, inner_x, inner_y, w=cell_width-20)
+                inner_y += img.size[1] * (cell_width-20) / img.size[0] + 5
+
+        pdf.set_xy(inner_x, inner_y)
+        pdf.set_font('DejaVu', '', 10)
+
+        if show_name:
+            name = str(row.get('Item Name', ''))
+            pdf.multi_cell(cell_width-20, 5, f"🛒 {name}", align='L')
+
         if show_category:
             category = str(row.get('Category', ''))
-            pdf.cell(0, 10, f"Category: {category}", ln=True)
+            pdf.multi_cell(cell_width-20, 5, f"📂 {category}", align='L')
+
         if show_price:
             price = row.get('Sale Price', '')
-            pdf.cell(0, 10, f"Sale Price: ${price}", ln=True)
+            pdf.multi_cell(cell_width-20, 5, f"💲 {price}", align='L')
+
         if show_stock:
             quantity = row.get('Quantity', '')
-            pdf.cell(0, 10, f"Quantity: {quantity}", ln=True)
-        notes = row.get('Notes', '')
-        pdf.multi_cell(0, 10, f"Notes: {notes}")
+            pdf.multi_cell(cell_width-20, 5, f"📦 {quantity}", align='L')
 
-        # Barcode Section (bottom)
+        if show_notes:
+            notes = row.get('Notes', '')
+            pdf.multi_cell(cell_width-20, 5, f"📝 {notes}", align='L')
+
         if show_barcode:
             barcode_data = str(row.get('Barcode', ''))
             barcode_img = generate_barcode_image(barcode_data, barcode_type)
             if barcode_img:
-                barcode_img.thumbnail((140, 40))
+                barcode_img.thumbnail((int(cell_width-30), 25))
                 barcode_buffer = io.BytesIO()
                 barcode_img.save(barcode_buffer, format='PNG')
                 barcode_buffer.seek(0)
-                pdf.image(barcode_buffer, x=35, y=pdf.get_y()+10, w=140, h=40)
+                pdf.image(barcode_buffer, inner_x, pdf.get_y()+2, w=cell_width-30)
+
+        counter += 1
 
     pdf_output = io.BytesIO()
     pdf.output(pdf_output)
