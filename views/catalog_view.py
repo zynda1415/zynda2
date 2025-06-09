@@ -9,6 +9,12 @@ import base64
 import io
 from PIL import Image
 
+# ✅ SAFELY decode base64 to image (this fixes Streamlit MediaFileStorageError)
+def decode_base64_to_image(b64_data):
+    img_data = base64.b64decode(b64_data)
+    img = Image.open(io.BytesIO(img_data))
+    return img
+
 def catalog_module():
     st.header("📦 Inventory Catalog")
 
@@ -105,11 +111,6 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                     if show_barcode and 'Barcode' in df.columns:
                         b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
                         st.image(decode_base64_to_image(b64_barcode))
-
-def decode_base64_to_image(b64_data):
-    img_data = base64.b64decode(b64_data)
-    img = Image.open(io.BytesIO(img_data))
-    return img
 
 def get_stock_badge(stock_qty):
     if stock_qty == 0:
