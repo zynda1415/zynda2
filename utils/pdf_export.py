@@ -1,6 +1,5 @@
 from fpdf import FPDF
 import io
-import base64
 import requests
 from PIL import Image
 from barcode import Code128, EAN13, EAN8, UPCA
@@ -33,7 +32,7 @@ def generate_barcode_image(barcode_data, barcode_type='Code128'):
         barcode.write(barcode_io)
         barcode_io.seek(0)
         return Image.open(barcode_io)
-    except Exception as e:
+    except:
         return None
 
 # Main function to generate full visual catalog PDF
@@ -79,7 +78,6 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
         if show_stock:
             quantity = row.get('Quantity', '')
             pdf.cell(0, 10, f"Quantity: {quantity}", ln=True)
-        # Notes always included
         notes = row.get('Notes', '')
         pdf.multi_cell(0, 10, f"Notes: {notes}", ln=True)
 
