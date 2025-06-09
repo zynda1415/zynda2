@@ -5,7 +5,7 @@ from PIL import Image
 from barcode import Code128, EAN13, EAN8, UPCA
 from barcode.writer import ImageWriter
 
-# Helper function to download image from URL
+# Download image from URL
 def download_image(image_url):
     try:
         response = requests.get(image_url)
@@ -14,7 +14,7 @@ def download_image(image_url):
     except:
         return None
 
-# Helper function to generate barcode image
+# Generate barcode image
 def generate_barcode_image(barcode_data, barcode_type='Code128'):
     if not barcode_data:
         return None
@@ -35,8 +35,9 @@ def generate_barcode_image(barcode_data, barcode_type='Code128'):
     except:
         return None
 
-# Main function to generate full visual catalog PDF
+# Main function to generate luxury-style catalog
 def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_barcode, barcode_type, color_option, export_layout, include_cover_page, logo_path=None, language='EN', selected_categories=None, selected_brands=None):
+
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
     pdf.set_font('DejaVu', '', 10)
@@ -44,54 +45,53 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
 
     if include_cover_page:
         pdf.add_page()
-        pdf.set_font('DejaVu', '', 24)
-        pdf.cell(0, 100, 'Inventory Catalog', ln=True, align='C')
+        pdf.set_font('DejaVu', '', 28)
+        pdf.cell(0, 100, '📦 Inventory Catalog', ln=True, align='C')
 
     for index, row in df.iterrows():
         pdf.add_page()
 
-        # Item Name
-        pdf.set_font('DejaVu', '', 16)
-        name = row.get('Item Name', '')
-        pdf.multi_cell(0, 10, name, align='C')
-
-        # Image Section
+        # Image Section (top)
         image_url = row.get('Image URL', '')
         img = download_image(image_url)
         if img:
-            img.thumbnail((100, 100))
+            img.thumbnail((180, 180))
             img_buffer = io.BytesIO()
             img.save(img_buffer, format='PNG')
             img_buffer.seek(0)
-            pdf.image(img_buffer, x=55, y=50, w=100, h=100)
+            pdf.image(img_buffer, x=15, y=20, w=180, h=0)
 
-        pdf.ln(80)
+        # Item Name (big title)
+        pdf.set_font('DejaVu', '', 20)
+        name = row.get('Item Name', '')
+        pdf.ln(95)
+        pdf.multi_cell(0, 12, name, align='C')
 
         # Details Section
-        pdf.set_font('DejaVu', '', 12)
+        pdf.set_font('DejaVu', '', 13)
+        pdf.ln(5)
         if show_category:
             category = str(row.get('Category', ''))
             pdf.cell(0, 10, f"Category: {category}", ln=True)
         if show_price:
-            sell_price = row.get('Sale Price', '')
-            pdf.cell(0, 10, f"Sale Price: {sell_price}", ln=True)
+            price = row.get('Sale Price', '')
+            pdf.cell(0, 10, f"Sale Price: ${price}", ln=True)
         if show_stock:
             quantity = row.get('Quantity', '')
             pdf.cell(0, 10, f"Quantity: {quantity}", ln=True)
         notes = row.get('Notes', '')
-        pdf.multi_cell(0, 10, f"Notes: {notes}", ln=True)
+        pdf.multi_cell(0, 10, f"Notes: {notes}")
 
-        # Barcode Section
+        # Barcode Section (bottom)
         if show_barcode:
             barcode_data = str(row.get('Barcode', ''))
             barcode_img = generate_barcode_image(barcode_data, barcode_type)
             if barcode_img:
-                barcode_img.thumbnail((80, 30))
+                barcode_img.thumbnail((140, 40))
                 barcode_buffer = io.BytesIO()
                 barcode_img.save(barcode_buffer, format='PNG')
                 barcode_buffer.seek(0)
-                pdf.image(barcode_buffer, x=65, y=pdf.get_y()+5, w=80, h=30)
-                pdf.ln(40)
+                pdf.image(barcode_buffer, x=35, y=pdf.get_y()+10, w=140, h=40)
 
     pdf_output = io.BytesIO()
     pdf.output(pdf_output)
