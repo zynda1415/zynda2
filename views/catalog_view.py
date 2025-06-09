@@ -111,6 +111,7 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                     if show_barcode and 'Barcode' in df.columns:
                         b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
                         st.image(decode_base64_to_image(b64_barcode))
+                        
 def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
     object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
     for i in range(0, len(df), columns_per_row):
