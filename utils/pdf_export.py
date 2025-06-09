@@ -20,14 +20,8 @@ def generate_barcode_image(barcode_data, barcode_type='Code128'):
         return None
     try:
         writer = ImageWriter()
-        if barcode_type == 'EAN13':
-            barcode = EAN13(barcode_data, writer=writer)
-        elif barcode_type == 'EAN8':
-            barcode = EAN8(barcode_data, writer=writer)
-        elif barcode_type == 'UPCA':
-            barcode = UPCA(barcode_data, writer=writer)
-        else:
-            barcode = Code128(barcode_data, writer=writer)
+        barcode_cls = {"EAN13": EAN13, "EAN8": EAN8, "UPCA": UPCA}.get(barcode_type, Code128)
+        barcode = barcode_cls(barcode_data, writer=writer)
         barcode_io = io.BytesIO()
         barcode.write(barcode_io)
         barcode_io.seek(0)
@@ -35,86 +29,77 @@ def generate_barcode_image(barcode_data, barcode_type='Code128'):
     except:
         return None
 
-# Main visual catalog function
-def generate_catalog_pdf_visual(
-    df, show_image, show_name, show_category, show_price, show_stock, show_notes, show_barcode,
-    barcode_type, paper_orientation, columns_per_row, rows_per_page, include_cover_page
-):
-    pdf = FPDF(orientation=paper_orientation, unit='mm', format='A4')
+# Master generator function
+def generate_catalog_pdf_visual(df, fields, layout, cover_page):
+    orientation = layout["orientation"]
+    columns = layout["columns"]
+    rows = layout["rows"]
+    barcode_type = layout["barcode_type"]
+
+    pdf = FPDF(orientation=orientation, unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
-    pdf.set_font('DejaVu', '', 9)
     pdf.set_auto_page_break(auto=True, margin=10)
 
-    page_width = 297 if paper_orientation == "L" else 210
-    page_height = 210 if paper_orientation == "L" else 297
+    page_w, page_h = (297, 210) if orientation == "L" else (210, 297)
+    box_w = (page_w - 20) / columns
+    box_h = (page_h - 20) / rows
 
-    if include_cover_page:
+    if cover_page:
         pdf.add_page()
-        pdf.set_font('DejaVu', '', 26)
+        pdf.set_font('DejaVu', '', 28)
         pdf.cell(0, 120, '📦 Inventory Catalog', ln=True, align='C')
 
-    cell_width = (page_width - 20) / columns_per_row
-    cell_height = (page_height - 20) / rows_per_page
-
-    counter = 0
-    for index, row in df.iterrows():
-        if counter % (columns_per_row * rows_per_page) == 0:
+    for idx, row in df.iterrows():
+        if idx % (columns * rows) == 0:
             pdf.add_page()
 
-        x = 10 + (counter % columns_per_row) * cell_width
-        y = 10 + ((counter // columns_per_row) % rows_per_page) * cell_height
+        col = (idx % columns)
+        rw = (idx // columns) % rows
+        x, y = 10 + col * box_w, 10 + rw * box_h
+
         pdf.set_xy(x, y)
         pdf.set_fill_color(245, 245, 245)
-        pdf.rect(x, y, cell_width - 5, cell_height - 5, 'F')
+        pdf.rect(x, y, box_w-5, box_h-5, 'F')
+        x_inner, y_inner = x + 5, y + 5
 
-        inner_x = x + 5
-        inner_y = y + 5
-
-        if show_image:
-            image_url = row.get('Image URL', '')
-            img = download_image(image_url)
-            if img:
-                img.thumbnail((int(cell_width-20), int(cell_height/3)))
-                img_buffer = io.BytesIO()
-                img.save(img_buffer, format='PNG')
-                img_buffer.seek(0)
-                pdf.image(img_buffer, inner_x, inner_y, w=cell_width-20)
-                inner_y += img.size[1] * (cell_width-20) / img.size[0] + 5
-
-        pdf.set_xy(inner_x, inner_y)
         pdf.set_font('DejaVu', '', 10)
 
-        if show_name:
-            name = str(row.get('Item Name', ''))
-            pdf.multi_cell(cell_width-20, 5, f"🛒 {name}", align='L')
+        # Image
+        if fields["image"]:
+            img = download_image(row.get('Image URL', ''))
+            if img:
+                img.thumbnail((int(box_w-20), int(box_h/3)))
+                img_io = io.BytesIO()
+                img.save(img_io, format='PNG')
+                img_io.seek(0)
+                pdf.image(img_io, x_inner, y_inner, w=box_w-20)
+                y_inner += img.size[1] * (box_w-20) / img.size[0] + 5
 
-        if show_category:
-            category = str(row.get('Category', ''))
-            pdf.multi_cell(cell_width-20, 5, f"📂 {category}", align='L')
+        # Text fields
+        text_fields = [
+            ("Item Name", fields["name"], row.get("Item Name", '')),
+            ("Category", fields["category"], row.get("Category", '')),
+            ("Sale Price", fields["price"], f"${row.get('Sale Price', '')}"),
+            ("Quantity", fields["stock"], row.get("Quantity", '')),
+            ("Notes", fields["notes"], row.get("Notes", ''))
+        ]
 
-        if show_price:
-            price = row.get('Sale Price', '')
-            pdf.multi_cell(cell_width-20, 5, f"💲 {price}", align='L')
+        for label, show, value in text_fields:
+            if show:
+                pdf.set_xy(x_inner, y_inner)
+                pdf.multi_cell(box_w-20, 5, f"{label}: {value}")
+                y_inner = pdf.get_y()
 
-        if show_stock:
-            quantity = row.get('Quantity', '')
-            pdf.multi_cell(cell_width-20, 5, f"📦 {quantity}", align='L')
-
-        if show_notes:
-            notes = row.get('Notes', '')
-            pdf.multi_cell(cell_width-20, 5, f"📝 {notes}", align='L')
-
-        if show_barcode:
+        # Barcode
+        if fields["barcode"]:
             barcode_data = str(row.get('Barcode', ''))
             barcode_img = generate_barcode_image(barcode_data, barcode_type)
             if barcode_img:
-                barcode_img.thumbnail((int(cell_width-30), 25))
-                barcode_buffer = io.BytesIO()
-                barcode_img.save(barcode_buffer, format='PNG')
-                barcode_buffer.seek(0)
-                pdf.image(barcode_buffer, inner_x, pdf.get_y()+2, w=cell_width-30)
-
-        counter += 1
+                barcode_img.thumbnail((int(box_w-30), 25))
+                barcode_io = io.BytesIO()
+                barcode_img.save(barcode_io, format='PNG')
+                barcode_io.seek(0)
+                pdf.image(barcode_io, x_inner, y_inner+2, w=box_w-30)
 
     pdf_output = io.BytesIO()
     pdf.output(pdf_output)
