@@ -51,20 +51,13 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
     for index, row in df.iterrows():
         pdf.add_page()
 
-        # Item Name (support multiple languages)
+        # Item Name
         pdf.set_font('DejaVu', '', 16)
-        if language == 'EN':
-            name = row.get('Item Name (English)', '')
-        elif language == 'AR':
-            name = row.get('Item Name (Arabic)', '')
-        elif language == 'KU':
-            name = row.get('Item Name (Kurdish)', '')
-        else:
-            name = row.get('Item Name (English)', '')
+        name = row.get('Item Name', '')
         pdf.multi_cell(0, 10, name, align='C')
 
         # Image Section
-        image_url = row.get('Image', '')
+        image_url = row.get('Image URL', '')
         img = download_image(image_url)
         if img:
             img.thumbnail((100, 100))
@@ -78,14 +71,17 @@ def generate_catalog_pdf_visual(df, show_category, show_price, show_stock, show_
         # Details Section
         pdf.set_font('DejaVu', '', 12)
         if show_category:
-            category = str(row.get('Category 1', ''))
+            category = str(row.get('Category', ''))
             pdf.cell(0, 10, f"Category: {category}", ln=True)
         if show_price:
-            sell_price = row.get('Sell Price', '')
-            pdf.cell(0, 10, f"Sell Price: {sell_price}", ln=True)
+            sell_price = row.get('Sale Price', '')
+            pdf.cell(0, 10, f"Sale Price: {sell_price}", ln=True)
         if show_stock:
-            stock = row.get('Stock', '')
-            pdf.cell(0, 10, f"Stock: {stock}", ln=True)
+            quantity = row.get('Quantity', '')
+            pdf.cell(0, 10, f"Quantity: {quantity}", ln=True)
+        # Notes always included
+        notes = row.get('Notes', '')
+        pdf.multi_cell(0, 10, f"Notes: {notes}", ln=True)
 
         # Barcode Section
         if show_barcode:
