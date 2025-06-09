@@ -157,7 +157,7 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                             display: flex; align-items: center; justify-content: center; 
                             border: 1px solid #ddd; margin: auto; margin-top:10px;">
                             <img src="data:image/png;base64,{b64_barcode}" 
-                                 style="width:100%; height:100%; object-fit:contain;">
+                                 style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         """, unsafe_allow_html=True)
 
