@@ -110,3 +110,9 @@ def get_stock_badge(stock_qty):
         return 'orange', 'Low Stock'
     else:
         return 'green', 'In Stock'
+def decode_base64_to_image(b64_data):
+    import base64, io
+    from PIL import Image
+    img_data = base64.b64decode(b64_data)
+    img = Image.open(io.BytesIO(img_data))
+    return img
