@@ -5,6 +5,9 @@ import preview.customization as customization
 import preview.style as style
 import preview.barcode_utils as barcode_utils
 import utils.pdf_export as pdf_export
+import base64
+import io
+from PIL import Image
 
 def catalog_module():
     st.header("📦 Inventory Catalog")
@@ -99,9 +102,14 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                             f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
                             unsafe_allow_html=True)
 
-                    if show_barcode:
+                    if show_barcode and 'Barcode' in df.columns:
                         b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
-                        st.image(b64_barcode)
+                        st.image(decode_base64_to_image(b64_barcode))
+
+def decode_base64_to_image(b64_data):
+    img_data = base64.b64decode(b64_data)
+    img = Image.open(io.BytesIO(img_data))
+    return img
 
 def get_stock_badge(stock_qty):
     if stock_qty == 0:
@@ -110,9 +118,3 @@ def get_stock_badge(stock_qty):
         return 'orange', 'Low Stock'
     else:
         return 'green', 'In Stock'
-def decode_base64_to_image(b64_data):
-    import base64, io
-    from PIL import Image
-    img_data = base64.b64decode(b64_data)
-    img = Image.open(io.BytesIO(img_data))
-    return img
