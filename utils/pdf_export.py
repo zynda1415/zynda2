@@ -1,3 +1,9 @@
+# Add these imports at the top of your pdf_export.py file
+from fpdf import FPDF
+import io
+from PIL import Image
+import requests
+
 # Fixed version of generate_catalog_pdf_visual function
 def generate_catalog_pdf_visual(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
