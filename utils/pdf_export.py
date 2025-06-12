@@ -1,6 +1,12 @@
 from fpdf import FPDF
 import io
+from PIL import Image
+import requests
+import base64
+from barcode import Code128
+from barcode.writer import ImageWriter
 
+# ========== Table-style Export ==========
 def generate_pdf_table(df):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
@@ -31,14 +37,7 @@ def generate_pdf_table(df):
     pdf.output(pdf_output)
     return pdf_output.getvalue()
 
-
-# === Visual Catalog PDF Generator ===
-from PIL import Image
-import requests
-import base64
-from barcode import Code128
-from barcode.writer import ImageWriter
-
+# ========== Helper: Image Downloader ==========
 def download_image(image_url):
     try:
         response = requests.get(image_url)
@@ -47,6 +46,7 @@ def download_image(image_url):
     except:
         return None
 
+# ========== Helper: Barcode Generator ==========
 def generate_barcode_image(data):
     try:
         barcode = Code128(data, writer=ImageWriter())
@@ -57,14 +57,15 @@ def generate_barcode_image(data):
     except:
         return None
 
+# ========== Visual Catalog Export ==========
 def generate_catalog_pdf_visual(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
-    pdf.set_font('DejaVu', '', 9)
+    pdf.set_font('DejaVu', '', 8)
     pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
 
-    card_w, card_h = 90, 60
+    card_w, card_h = 90, 70
     x_start, y_start = 10, 10
     x, y = x_start, y_start
     spacing = 5
@@ -84,22 +85,36 @@ def generate_catalog_pdf_visual(df):
         item_name = str(row.get('Item Name (English)', ''))
         price = str(row.get('Sell Price', ''))
         brand = str(row.get('Brand', ''))
+        image_url = str(row.get('Image URL', ''))
         barcode_data = str(row.get('Barcode', ''))
 
+        # 🔹 Item name
         pdf.set_xy(x + 2, y + 2)
-        pdf.multi_cell(card_w - 4, 5, item_name, 0)
-        pdf.set_xy(x + 2, y + 12)
+        pdf.multi_cell(card_w - 4, 4, item_name, 0)
+
+        # 🔹 Image preview
+        if image_url:
+            item_img = download_image(image_url)
+            if item_img:
+                item_img.thumbnail((card_w - 10, 25))
+                buf = io.BytesIO()
+                item_img.save(buf, format='PNG')
+                buf.seek(0)
+                pdf.image(buf, x + 2, y + 10, w=card_w - 10, h=25)
+
+        # 🔹 Price and brand
+        pdf.set_xy(x + 2, y + 36)
         pdf.cell(card_w - 4, 5, f"Price: {price}", 0, ln=1)
         pdf.cell(card_w - 4, 5, f"Brand: {brand}", 0, ln=1)
 
-        # Barcode image
+        # 🔹 Barcode
         barcode_img = generate_barcode_image(barcode_data)
         if barcode_img:
             barcode_img.thumbnail((card_w - 10, 20))
             buf = io.BytesIO()
             barcode_img.save(buf, format='PNG')
             buf.seek(0)
-            pdf.image(buf, x + 2, y + 32, w=card_w - 10)
+            pdf.image(buf, x + 2, y + 48, w=card_w - 10)
 
         x += card_w + spacing
 
