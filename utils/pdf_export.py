@@ -1,63 +1,4 @@
-from fpdf import FPDF
-import io
-from PIL import Image
-import requests
-import base64
-from barcode import Code128
-from barcode.writer import ImageWriter
-
-# ========== Table-style Export ==========
-def generate_pdf_table(df):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
-    pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
-    pdf.set_font('DejaVu', '', 10)
-    pdf.add_page()
-
-    headers = ["Item Name (English)", "Sell Price", "Stock", "Brand", "Category", "Note"]
-    col_widths = [60, 30, 20, 40, 40, 60]
-
-    for i, header in enumerate(headers):
-        pdf.cell(col_widths[i], 10, header, border=1)
-    pdf.ln()
-
-    for index, row in df.iterrows():
-        values = [
-            str(row['Item Name (English)']),
-            f"{row['Sell Price']}",
-            f"{row['Stock']}",
-            str(row['Brand']),
-            str(row['Category 1']),
-            str(row['Note'])
-        ]
-        for i, value in enumerate(values):
-            pdf.cell(col_widths[i], 10, value, border=1)
-        pdf.ln()
-
-    pdf_output = io.BytesIO()
-    pdf.output(pdf_output)
-    return pdf_output.getvalue()
-
-# ========== Helper: Image Downloader ==========
-def download_image(image_url):
-    try:
-        response = requests.get(image_url)
-        if response.status_code == 200:
-            return Image.open(io.BytesIO(response.content))
-    except:
-        return None
-
-# ========== Helper: Barcode Generator ==========
-def generate_barcode_image(data):
-    try:
-        barcode = Code128(data, writer=ImageWriter())
-        buffer = io.BytesIO()
-        barcode.write(buffer)
-        buffer.seek(0)
-        return Image.open(buffer)
-    except:
-        return None
-
-# ========== Visual Catalog Export ==========
+# Fixed version of generate_catalog_pdf_visual function
 def generate_catalog_pdf_visual(df):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
@@ -82,9 +23,10 @@ def generate_catalog_pdf_visual(df):
         pdf.set_fill_color(240, 240, 240)
         pdf.rect(x, y, card_w, card_h, 'F')
 
-        item_name = str(row.get('Item Name (English)', ''))
-        price = str(row.get('Sell Price', ''))
-        brand = str(row.get('Brand', ''))
+        # 🔹 FIXED: Use correct column names
+        item_name = str(row.get('Item Name', ''))  # This should match your data
+        price = str(row.get('Sale Price', ''))     # Changed from 'Sell Price'
+        category = str(row.get('Category', ''))    # Changed from 'Brand'
         image_url = str(row.get('Image URL', ''))
         barcode_data = str(row.get('Barcode', ''))
 
@@ -93,7 +35,7 @@ def generate_catalog_pdf_visual(df):
         pdf.multi_cell(card_w - 4, 4, item_name, 0)
 
         # 🔹 Image preview
-        if image_url:
+        if image_url and image_url != 'nan':
             item_img = download_image(image_url)
             if item_img:
                 item_img.thumbnail((card_w - 10, 25))
@@ -102,19 +44,20 @@ def generate_catalog_pdf_visual(df):
                 buf.seek(0)
                 pdf.image(buf, x + 2, y + 10, w=card_w - 10, h=25)
 
-        # 🔹 Price and brand
+        # 🔹 Price and category
         pdf.set_xy(x + 2, y + 36)
-        pdf.cell(card_w - 4, 5, f"Price: {price}", 0, ln=1)
-        pdf.cell(card_w - 4, 5, f"Brand: {brand}", 0, ln=1)
+        pdf.cell(card_w - 4, 5, f"Price: ${price}", 0, ln=1)
+        pdf.cell(card_w - 4, 5, f"Category: {category}", 0, ln=1)
 
         # 🔹 Barcode
-        barcode_img = generate_barcode_image(barcode_data)
-        if barcode_img:
-            barcode_img.thumbnail((card_w - 10, 20))
-            buf = io.BytesIO()
-            barcode_img.save(buf, format='PNG')
-            buf.seek(0)
-            pdf.image(buf, x + 2, y + 48, w=card_w - 10)
+        if barcode_data and barcode_data != 'nan':
+            barcode_img = generate_barcode_image(barcode_data)
+            if barcode_img:
+                barcode_img.thumbnail((card_w - 10, 20))
+                buf = io.BytesIO()
+                barcode_img.save(buf, format='PNG')
+                buf.seek(0)
+                pdf.image(buf, x + 2, y + 48, w=card_w - 10)
 
         x += card_w + spacing
 
