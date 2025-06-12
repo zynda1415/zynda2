@@ -9,7 +9,6 @@ import base64
 import io
 from PIL import Image
 
-# ✅ SAFELY decode base64 to image (this fixes Streamlit MediaFileStorageError)
 def decode_base64_to_image(b64_data):
     img_data = base64.b64decode(b64_data)
     img = Image.open(io.BytesIO(img_data))
@@ -51,11 +50,7 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
-        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
-            df, show_category, show_price, show_stock, show_barcode, barcode_type, 
-            color_option, export_layout, include_cover_page, logo_path=None, language='EN',
-            selected_categories=None, selected_brands=None
-        )
+        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(df)
         st.success("✅ PDF Generated Successfully!")
         st.download_button("📥 Download Visual Catalog PDF", data=pdf_bytes, file_name=filename)
 
@@ -79,39 +74,6 @@ def apply_sort(df, sort_option):
         return df.sort_values(by='Quantity', ascending=False)
     return df
 
-def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
-    object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
-    for i in range(0, len(df), columns_per_row):
-        cols = st.columns(columns_per_row)
-        for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
-            with col:
-                with st.container():
-                    st.markdown(f"""
-                    <div style="
-                        width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
-                        display: flex; align-items: center; justify-content: center;
-                        border: 1px solid #ddd; margin: auto;">
-                        <img src="{row['Image URL']}" style="width: 100%; height: 100%; object-fit: {object_fit_value};">
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
-
-                    if show_category:
-                        st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
-                    if show_price:
-                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
-                    if show_stock:
-                        stock_qty = row['Quantity']
-                        badge_color, badge_label = get_stock_badge(stock_qty)
-                        st.markdown(
-                            f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
-                            unsafe_allow_html=True)
-
-                    if show_barcode and 'Barcode' in df.columns:
-                        b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
-                        st.image(decode_base64_to_image(b64_barcode))
-                        
 def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
     object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
     for i in range(0, len(df), columns_per_row):
