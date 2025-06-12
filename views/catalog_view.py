@@ -30,7 +30,7 @@ def catalog_module():
     with col2:
         category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
     with col3:
-        sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
+        sort_option = st.selectbox("↕️ Sort", ["Item Name (English) (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
     with col4:
         columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
     with col5:
@@ -41,7 +41,7 @@ def catalog_module():
         page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
 
     if search:
-        df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
+        df = df[df.apply(lambda row: search.lower() in str(row['Item Name (English)']).lower() 
                          or search.lower() in str(row['Category']).lower()
                          or search.lower() in str(row.get('Notes', '')).lower(), axis=1)]
     if category_filter != "All":
@@ -62,8 +62,8 @@ def catalog_module():
                  color_option, image_fit, barcode_type)
 
 def apply_sort(df, sort_option):
-    if sort_option == "Item Name (A-Z)":
-        return df.sort_values(by='Item Name', ascending=True)
+    if sort_option == "Item Name (English) (A-Z)":
+        return df.sort_values(by='Item Name (English)', ascending=True)
     elif sort_option == "Price (Low-High)":
         return df.sort_values(by='Sale Price', ascending=True)
     elif sort_option == "Price (High-Low)":
@@ -91,8 +91,8 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # 🔷 Item Name
-                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
+                    # 🔷 Item Name (English)
+                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name (English)']}</div>", unsafe_allow_html=True)
 
                     # 🔷 Category
                     if show_category:
