@@ -30,7 +30,7 @@ def catalog_module():
     with col2:
         category_filter = st.selectbox("📂 Category", ["All"] + list(df['Category'].unique()))
     with col3:
-        sort_option = st.selectbox("↕️ Sort", ["Item Name (English) (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
+        sort_option = st.selectbox("↕️ Sort", ["Item Name (A-Z)", "Price (Low-High)", "Price (High-Low)", "Stock (Low-High)", "Stock (High-Low)"])
     with col4:
         columns_per_row = st.selectbox("🖥️ Columns", [1, 2, 3, 4, 5], index=2)
     with col5:
@@ -62,7 +62,7 @@ def catalog_module():
                  color_option, image_fit, barcode_type)
 
 def apply_sort(df, sort_option):
-    if sort_option == "Item Name (English) (A-Z)":
+    if sort_option == "Item Name (A-Z)":
         return df.sort_values(by='Item Name (English)', ascending=True)
     elif sort_option == "Price (Low-High)":
         return df.sort_values(by='Sale Price', ascending=True)
@@ -81,7 +81,6 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
         for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    # 🔷 Product Image (Square)
                     st.markdown(f"""
                     <div style="
                         width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
@@ -91,18 +90,12 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # 🔷 Item Name (English)
                     st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name (English)']}</div>", unsafe_allow_html=True)
 
-                    # 🔷 Category
                     if show_category:
                         st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
-
-                    # 🔷 Price
                     if show_price:
                         st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
-
-                    # 🔷 Stock
                     if show_stock:
                         stock_qty = row['Quantity']
                         badge_color, badge_label = get_stock_badge(stock_qty)
@@ -110,18 +103,9 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                             f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
                             unsafe_allow_html=True)
 
-                    # 🔷 Barcode (RECTANGULAR)
                     if show_barcode and 'Barcode' in df.columns:
                         b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
-                        st.markdown(f"""
-                        <div style="
-                            width: 220px; height: 80px; border-radius: 8px; overflow: hidden; 
-                            display: flex; align-items: center; justify-content: center; 
-                            border: 1px solid #ddd; margin: auto; margin-top:10px;">
-                            <img src="data:image/png;base64,{b64_barcode}" 
-                                 style="width:100%; height:100%; object-fit:cover;">
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.image(decode_base64_to_image(b64_barcode))
 
 def get_stock_badge(stock_qty):
     if stock_qty == 0:
