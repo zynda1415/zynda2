@@ -54,46 +54,54 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
-        try:
-            # 🔹 Create a copy for PDF export
-            pdf_df = df.copy()
-            
-            # 🔹 Your columns already match most PDF requirements, just need a few mappings
-            if 'Supplier' in pdf_df.columns and 'Brand' not in pdf_df.columns:
-                pdf_df['Brand'] = pdf_df['Supplier']
-            if 'Quantity' in pdf_df.columns and 'Stock' not in pdf_df.columns:
-                pdf_df['Stock'] = pdf_df['Quantity']
-            if 'Category' in pdf_df.columns and 'Category 1' not in pdf_df.columns:
-                pdf_df['Category 1'] = pdf_df['Category']
-            if 'Notes' in pdf_df.columns and 'Note' not in pdf_df.columns:
-                pdf_df['Note'] = pdf_df['Notes']
-            
-            # 🔹 Ensure required columns exist with default values
-            required_columns = {
-                'Item Name (English)': 'Unknown Item',
-                'Sell Price': 0.0,
-                'Stock': 0,
-                'Brand': 'Unknown Brand',
-                'Category 1': 'Uncategorized',
-                'Note': '',
-                'Image URL': '',
-                'Barcode': ''
-            }
-            
-            # Add missing columns with defaults
-            for col, default_val in required_columns.items():
-                if col not in pdf_df.columns:
-                    pdf_df[col] = default_val
-            
-            pdf_layout_options = pdf_customization_controls()
-            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(pdf_df, **pdf_layout_options)
+    try:
+        # 🔹 Create a copy for PDF export
+        pdf_df = df.copy()
 
-            st.success("PDF Generated Successfully!")
-            st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
-            
-        except Exception as e:
-            st.error(f"Error generating PDF: {str(e)}")
-            st.write("DataFrame columns available:", list(df.columns))
+        # 🔹 Fix missing expected columns for PDF logic
+        if 'Supplier' in pdf_df.columns and 'Brand' not in pdf_df.columns:
+            pdf_df['Brand'] = pdf_df['Supplier']
+        if 'Quantity' in pdf_df.columns and 'Stock' not in pdf_df.columns:
+            pdf_df['Stock'] = pdf_df['Quantity']
+        if 'Category' in pdf_df.columns and 'Category 1' not in pdf_df.columns:
+            pdf_df['Category 1'] = pdf_df['Category']
+        if 'Notes' in pdf_df.columns and 'Note' not in pdf_df.columns:
+            pdf_df['Note'] = pdf_df['Notes']
+
+        # 🔹 Add missing columns with defaults
+        required_columns = {
+            'Item Name (English)': 'Unknown Item',
+            'Sell Price': 0.0,
+            'Stock': 0,
+            'Brand': 'Unknown Brand',
+            'Category 1': 'Uncategorized',
+            'Note': '',
+            'Image URL': '',
+            'Barcode': ''
+        }
+        for col, default_val in required_columns.items():
+            if col not in pdf_df.columns:
+                pdf_df[col] = default_val
+
+        # 🔧 Get user layout preferences for PDF
+        pdf_options = pdf_customization_controls()
+
+        # 📄 Generate the PDF
+        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+            pdf_df,
+            image_position=pdf_options["image_position"],
+            name_font_size=pdf_options["name_font_size"],
+            stack_text=pdf_options["stack_text"],
+            show_barcode=pdf_options["show_barcode_pdf"]
+        )
+
+        st.success("PDF Generated Successfully!")
+        st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
+
+    except Exception as e:
+        st.error(f"Error generating PDF: {str(e)}")
+        st.write("DataFrame columns available:", list(df.columns))
+
 
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
