@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 import data
+import views.sheet_info_view as sheet_info_view
 
 # Views
 import views.inventory_view as inventory_view
