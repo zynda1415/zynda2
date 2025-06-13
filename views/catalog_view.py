@@ -54,7 +54,7 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
-    try:
+        try:
         # 🔹 Create a copy for PDF export
         pdf_df = df.copy()
 
