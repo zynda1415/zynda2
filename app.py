@@ -23,7 +23,7 @@ def main():
     with st.sidebar:
         menu = option_menu("ZYNDA_SYSTEM Menu", 
             ["View Inventory", "Item", "Statistics", "Catalog View", "Map", 
-             "Sales", "Sales Summary", "Sales Charts", "Clients Management", "Invoices"],
+             "Sales", "Sales Summary", "Sales Charts", "Clients Management", "Invoices", "Sheet Info"],
             icons=["box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
                    "cash-coin", "clipboard-data", "graph-up-arrow", "people-fill", "file-earmark-text"],
             menu_icon="grid-3x3-gap-fill", default_index=0)
@@ -57,6 +57,10 @@ def main():
 
     elif menu == "Invoices":
         invoice.render_invoice_section()
+        
+    elif page == "Sheet Info":
+        sheet_info_view.sheet_info_module()
+
 
 if __name__ == "__main__":
     main()
