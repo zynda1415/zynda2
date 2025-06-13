@@ -51,6 +51,8 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
+        # Patch keys for PDF compatibility
+        df = df.rename(columns={"Sale Price": "Sell Price", "Supplier": "Brand"})
         pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(df)
         st.success("PDF Generated Successfully!")
         st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
