@@ -2,6 +2,27 @@ import streamlit as st
 import data
 import json
 from datetime import datetime
+import os
+
+def generate_config_py_from_headers(header_snapshot):
+    path = "config.py"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("# Auto-generated config from Sheet Info View\n")
+        f.write("HEADER_ALIASES = {\n")
+        for sheet, headers in header_snapshot.items():
+            f.write(f'    "{sheet}": {{\n')
+            for h in headers:
+                key = h.lower().strip().replace(" ", "_").replace("(", "").replace(")", "")
+                f.write(f'        "{key}": "{h}",\n')
+            f.write("    },\n")
+        f.write("}\n")
+
+
+# 👇 Add this to bottom of sheet_info_module()
+    st.markdown("---")
+    if st.button("💡 Rebuild config.py from live headers"):
+        generate_config_py_from_headers(header_snapshot)
+        st.success("✅ config.py regenerated from current sheets.")
 
 def sheet_info_module():
     st.title("🛠️ Sheet & Header Editor Pro")
