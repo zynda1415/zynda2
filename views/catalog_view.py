@@ -102,8 +102,9 @@ def catalog_module():
     end_idx = start_idx + items_per_page
     page_data = df.iloc[start_idx:end_idx]
 
-    render_cards(page_data, columns_per_row, show_category, show_price, show_stock, show_barcode,
-                 color_option, image_fit, barcode_type)
+    def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
+        st.warning("🛑 render_cards() not yet implemented.")
+
 
 def apply_sort(df, sort_option):
     if sort_option == "Item Name (A-Z)":
