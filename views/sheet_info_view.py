@@ -8,27 +8,34 @@ def sheet_info_module():
     worksheets = gsheet.worksheets()
 
     for ws in worksheets:
-        old_name = ws.title
-
-        with st.expander(f"🗂 {old_name}"):
-            new_name = st.text_input(f"Rename Sheet '{old_name}'", value=old_name, key=f"rename_{old_name}")
-
-            if new_name != old_name:
-                if st.button(f"✅ Apply Sheet Rename: {old_name} → {new_name}", key=f"btn_{old_name}"):
+        sheet_name = ws.title
+        with st.expander(f"📄 {sheet_name}"):
+            # 📝 Rename Sheet
+            new_name = st.text_input(f"Rename Sheet '{sheet_name}'", value=sheet_name, key=f"rename_{sheet_name}")
+            if new_name != sheet_name:
+                if st.button(f"✅ Rename: {sheet_name} → {new_name}", key=f"btn_{sheet_name}"):
                     ws.update_title(new_name)
-                    st.success("Sheet renamed! Please reload app.")
+                    st.success("✅ Sheet renamed. Refresh the page.")
+                    st.stop()
 
+            # 🔠 Edit headers
             headers = ws.row_values(1)
             st.markdown("### ✏️ Edit Column Headers:")
             new_headers = []
 
-            cols = st.columns(len(headers))
-            for i, h in enumerate(headers):
-                new = cols[i].text_input(f"Col {i+1}", value=h, key=f"header_{old_name}_{i}")
-                new_headers.append(new)
+            if headers:
+                cols = st.columns(min(len(headers), 10))  # cap at 10 columns
+                for i, h in enumerate(headers):
+                    col = cols[i % 10]  # rotate layout every 10
+                    new_val = col.text_input(f"Col {i+1}", value=h, key=f"{sheet_name}_{i}")
+                    new_headers.append(new_val)
+            else:
+                st.warning("⚠️ No headers found in this sheet.")
+                new_headers = []
 
-            if new_headers != headers:
-                if st.button(f"💾 Update Headers for {new_name}", key=f"save_headers_{old_name}"):
+            if headers and new_headers != headers:
+                if st.button(f"💾 Save Header Changes for {sheet_name}", key=f"save_{sheet_name}"):
                     ws.delete_rows(1)
                     ws.insert_row(new_headers, index=1)
-                    st.success("Headers updated successfully.")
+                    st.success("✅ Headers updated.")
+                    st.stop()
