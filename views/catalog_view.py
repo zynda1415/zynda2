@@ -1,63 +1,96 @@
+import streamlit as st
+import math
+import pandas as pd
 from config import HEADER_ALIASES as H
-
-...
+from data import load_inventory_data
+from preview import customization, style, barcode_utils, pdf_Customization
+from utils import pdf_export
 
 def catalog_module():
-    ...
-    col = H["Inventory"]
-    df = data.load_inventory()
+    st.header("📘 View Catalog")
 
-    ...
+    df = load_inventory_data()
+    if df.empty:
+        st.warning("No items to display.")
+        return
 
+    # === UI Controls ===
+    (show_category, show_price, show_stock, show_barcode,
+     layout_style, color_option, image_fit, barcode_type,
+     export_layout, include_cover_page) = customization.customization_controls(df)
+
+    style.apply_global_styles()
+
+    col1, col2, col3, col4 = st.columns([2.5, 1.7, 1.7, 2])
+    with col1:
+        search = st.text_input("🔍 Search", placeholder="Name, Category, Note...")
+    with col2:
+        category_filter = st.selectbox("📁 Category", ["All"] + sorted(df[H["Category 1"]].dropna().unique()))
+    with col3:
+        brand_filter = st.selectbox("🏷️ Brand", ["All"] + sorted(df[H["Brand"]].dropna().unique()))
+    with col4:
+        columns_per_row = st.slider("📐 Columns", 1, 5, 3)
+
+    # === Filter + Search ===
+    filtered_df = df.copy()
     if search:
-        df = df[df.apply(lambda row: search.lower() in str(row[col["name"]]).lower()
-                         or search.lower() in str(row[col["category"]]).lower()
-                         or search.lower() in str(row.get(col["note"], "")).lower(), axis=1)]
-
+        search_lower = search.lower()
+        filtered_df = filtered_df[filtered_df.apply(
+            lambda row: search_lower in str(row.get(H["Item Name (English)"], "")).lower()
+            or search_lower in str(row.get(H["Category 1"], "")).lower()
+            or search_lower in str(row.get(H["Note"], "")).lower(),
+            axis=1
+        )]
     if category_filter != "All":
-        df = df[df[col["category"]] == category_filter]
+        filtered_df = filtered_df[filtered_df[H["Category 1"]] == category_filter]
+    if brand_filter != "All":
+        filtered_df = filtered_df[filtered_df[H["Brand"]] == brand_filter]
 
-    # ✅ Proper indentation of Export Button
-    if st.button("📄 Export Visual Catalog to PDF"):
-        try:
-            pdf_df = df.copy()
+    # === Display Cards ===
+    render_cards(filtered_df, columns_per_row, show_category, show_price, show_stock,
+                 show_barcode, color_option, image_fit, barcode_type)
 
-            if col["brand"] in pdf_df.columns and "Brand" not in pdf_df.columns:
-                pdf_df["Brand"] = pdf_df[col["brand"]]
-            if col["stock"] in pdf_df.columns and "Stock" not in pdf_df.columns:
-                pdf_df["Stock"] = pdf_df[col["stock"]]
-            if col["category"] in pdf_df.columns and "Category 1" not in pdf_df.columns:
-                pdf_df["Category 1"] = pdf_df[col["category"]]
-            if col["note"] in pdf_df.columns and "Note" not in pdf_df.columns:
-                pdf_df["Note"] = pdf_df[col["note"]]
+    # === Export to PDF ===
+    st.markdown("---")
+    st.subheader("📤 Export Visual Catalog")
+    if st.button("📄 Export to PDF"):
+        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+            filtered_df, show_category, show_price, show_stock, show_barcode, barcode_type,
+            color_option, export_layout, include_cover_page, logo_path=None, language='EN',
+            selected_categories=[category_filter] if category_filter != "All" else None,
+            selected_brands=[brand_filter] if brand_filter != "All" else None
+        )
+        st.download_button("⬇️ Download PDF", data=pdf_bytes, file_name=filename)
 
-            required_columns = {
-                col["name"]: "Unknown Item",
-                col["price"]: 0.0,
-                "Stock": 0,
-                "Brand": "Unknown Brand",
-                "Category 1": "Uncategorized",
-                "Note": "",
-                col["image"]: "",
-                col["barcode"]: ""
-            }
-            for c, default_val in required_columns.items():
-                if c not in pdf_df.columns:
-                    pdf_df[c] = default_val
+def render_cards(df, cols, show_category, show_price, show_stock, show_barcode,
+                 color_option, image_fit, barcode_type):
+    if df.empty:
+        st.info("No matching items.")
+        return
 
-            # ⬇️ Customize layout and generate PDF
-            pdf_options = pdf_customization_controls()
-            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
-                pdf_df,
-                image_position=pdf_options["image_position"],
-                name_font_size=pdf_options["name_font_size"],
-                stack_text=pdf_options["stack_text"],
-                show_barcode=pdf_options["show_barcode_pdf"]
-            )
-
-            st.success("PDF Generated Successfully!")
-            st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
-
-        except Exception as e:
-            st.error(f"Error generating PDF: {str(e)}")
-            st.write("DataFrame columns available:", list(df.columns))
+    rows = math.ceil(len(df) / cols)
+    for r in range(rows):
+        card_row = st.columns(cols)
+        for i in range(cols):
+            idx = r * cols + i
+            if idx >= len(df): break
+            row = df.iloc[idx]
+            with card_row[i]:
+                style.render_card(
+                    name=row.get(H["Item Name (English)"], "Unnamed"),
+                    image_url=row.get(H["Image"], ""),
+                    price=row.get(H["Sell Price"], ""),
+                    category=row.get(H["Category 1"], ""),
+                    note=row.get(H["Note"], ""),
+                    brand=row.get(H["Brand"], ""),
+                    stock=row.get(H.get("Stock", ""), "N/A"),
+                    code=row.get(H["Code"], ""),
+                    barcode=row.get(H["Barcode"], ""),
+                    show_category=show_category,
+                    show_price=show_price,
+                    show_stock=show_stock,
+                    show_barcode=show_barcode,
+                    color_option=color_option,
+                    image_fit=image_fit,
+                    barcode_type=barcode_type
+                )
