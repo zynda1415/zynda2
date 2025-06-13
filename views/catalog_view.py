@@ -6,10 +6,11 @@ import preview.customization as customization
 import preview.style as style
 import preview.barcode_utils as barcode_utils
 import utils.pdf_export as pdf_export
-import base64
-import io
 from preview.pdf_Customization import pdf_customization_controls
 from PIL import Image
+import base64
+import io
+import pandas as pd
 
 def decode_base64_to_image(b64_data):
     img_data = base64.b64decode(b64_data)
@@ -20,8 +21,6 @@ def catalog_module():
     st.header("📦 Inventory Catalog")
 
     df = data.load_inventory()
-    
-    # Column names should now be consistent
 
     (show_category, show_price, show_stock, show_barcode, layout_style, 
      color_option, image_fit, barcode_type, export_layout, include_cover_page) = customization.customization_controls(df)
@@ -54,53 +53,50 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
-    try:
-        # 🔹 Create a copy for PDF export
-        pdf_df = df.copy()
+        try:
+            pdf_df = df.copy()
 
-        # 🔹 Fix missing expected columns for PDF logic
-        if 'Supplier' in pdf_df.columns and 'Brand' not in pdf_df.columns:
-            pdf_df['Brand'] = pdf_df['Supplier']
-        if 'Quantity' in pdf_df.columns and 'Stock' not in pdf_df.columns:
-            pdf_df['Stock'] = pdf_df['Quantity']
-        if 'Category' in pdf_df.columns and 'Category 1' not in pdf_df.columns:
-            pdf_df['Category 1'] = pdf_df['Category']
-        if 'Notes' in pdf_df.columns and 'Note' not in pdf_df.columns:
-            pdf_df['Note'] = pdf_df['Notes']
+            # fix headers
+            if 'Supplier' in pdf_df.columns and 'Brand' not in pdf_df.columns:
+                pdf_df['Brand'] = pdf_df['Supplier']
+            if 'Quantity' in pdf_df.columns and 'Stock' not in pdf_df.columns:
+                pdf_df['Stock'] = pdf_df['Quantity']
+            if 'Category' in pdf_df.columns and 'Category 1' not in pdf_df.columns:
+                pdf_df['Category 1'] = pdf_df['Category']
+            if 'Notes' in pdf_df.columns and 'Note' not in pdf_df.columns:
+                pdf_df['Note'] = pdf_df['Notes']
 
-        # 🔹 Add missing columns with defaults
-        required_columns = {
-            'Item Name (English)': 'Unknown Item',
-            'Sell Price': 0.0,
-            'Stock': 0,
-            'Brand': 'Unknown Brand',
-            'Category 1': 'Uncategorized',
-            'Note': '',
-            'Image URL': '',
-            'Barcode': ''
-        }
-        for col, default_val in required_columns.items():
-            if col not in pdf_df.columns:
-                pdf_df[col] = default_val
+            required_columns = {
+                'Item Name (English)': 'Unknown Item',
+                'Sell Price': 0.0,
+                'Stock': 0,
+                'Brand': 'Unknown Brand',
+                'Category 1': 'Uncategorized',
+                'Note': '',
+                'Image URL': '',
+                'Barcode': ''
+            }
 
-        # 🔧 Get user layout preferences for PDF
-        pdf_options = pdf_customization_controls()
+            for col, default_val in required_columns.items():
+                if col not in pdf_df.columns:
+                    pdf_df[col] = default_val
 
-        # 📄 Generate the PDF
-        pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
-            pdf_df,
-            image_position=pdf_options["image_position"],
-            name_font_size=pdf_options["name_font_size"],
-            stack_text=pdf_options["stack_text"],
-            show_barcode=pdf_options["show_barcode_pdf"]
-        )
+            pdf_options = pdf_customization_controls()
 
-        st.success("PDF Generated Successfully!")
-        st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
+            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+                pdf_df,
+                image_position=pdf_options["image_position"],
+                name_font_size=pdf_options["name_font_size"],
+                stack_text=pdf_options["stack_text"],
+                show_barcode=pdf_options["show_barcode_pdf"]
+            )
 
-    except Exception as e:
-        st.error(f"Error generating PDF: {str(e)}")
-        st.write("DataFrame columns available:", list(df.columns))
+            st.success("PDF Generated Successfully!")
+            st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
+
+        except Exception as e:
+            st.error(f"Error generating PDF: {str(e)}")
+            st.write("DataFrame columns available:", list(df.columns))
 
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
@@ -121,78 +117,3 @@ def apply_sort(df, sort_option):
     elif sort_option == "Stock (High-Low)":
         return df.sort_values(by='Quantity', ascending=False)
     return df
-
-def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
-    object_fit_value = 'contain' if image_fit == 'Contain' else 'cover'
-    
-    for i in range(0, len(df), columns_per_row):
-        cols = st.columns(columns_per_row)
-        for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
-            with col:
-                with st.container():
-                    # 🔹 Handle image display
-                    image_url = row.get('Image URL', '')
-                    if image_url:
-                        st.markdown(f"""
-                        <div style="
-                            width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
-                            display: flex; align-items: center; justify-content: center;
-                            border: 1px solid #ddd; margin: auto;">
-                            <img src="{image_url}" style="width: 100%; height: 100%; object-fit: {object_fit_value};">
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div style="
-                            width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
-                            display: flex; align-items: center; justify-content: center;
-                            border: 1px solid #ddd; margin: auto; background-color: #f0f0f0;">
-                            <span style="color: #999;">No Image</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    # 🔹 Display item name
-                    item_name = row.get('Item Name (English)', 'Unknown Item')
-                    st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{item_name}</div>", unsafe_allow_html=True)
-
-                    # 🔹 Display category
-                    if show_category:
-                        category = row.get('Category', 'Uncategorized')
-                        st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {category}</div>", unsafe_allow_html=True)
-                    
-                    # 🔹 Display price
-                    if show_price and 'Sell Price' in row and pd.notna(row['Sell Price']):
-                        price = row['Sell Price']
-                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${price:.2f}</div>", unsafe_allow_html=True)
-
-                    # 🔹 Display stock
-                    if show_stock and 'Quantity' in row and pd.notna(row['Quantity']):
-                        stock_qty = row['Quantity']
-                        badge_color, badge_label = get_stock_badge(stock_qty)
-                        st.markdown(
-                            f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
-                            unsafe_allow_html=True)
-
-                    # 🔹 Display barcode
-                    if show_barcode and 'Barcode' in df.columns and pd.notna(row.get('Barcode')):
-                        try:
-                            b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
-                            st.markdown(f"""
-                            <div style="
-                                width: 220px; height: 80px; border-radius: 8px; overflow: hidden; 
-                                display: flex; align-items: center; justify-content: center; 
-                                border: 1px solid #ddd; margin: auto; margin-top:10px;">
-                                <img src="data:image/png;base64,{b64_barcode}" 
-                                     style="width:100%; height:100%; object-fit:cover;">
-                            </div>
-                            """, unsafe_allow_html=True)
-                        except Exception as e:
-                            st.write(f"Barcode error: {e}")
-
-def get_stock_badge(stock_qty):
-    if stock_qty == 0:
-        return 'red', 'Out of Stock'
-    elif stock_qty < 5:
-        return 'orange', 'Low Stock'
-    else:
-        return 'green', 'In Stock'
