@@ -1,101 +1,54 @@
+# --- views/sheet_info_view.py ---
 import streamlit as st
-import data
+import gspread
+from google.oauth2.service_account import Credentials
 import json
-from datetime import datetime
+import os
 
-def sheet_info_module():
-    st.title("🛠️ Sheet & Header Editor Pro")
+st.subheader("🧾 Sheet Info Manager")
 
-    gsheet = data.sheet
-    worksheets = gsheet.worksheets()
-    header_snapshot = {}
+# Load credentials and spreadsheet
+scope = ["https://www.googleapis.com/auth/spreadsheets"]
+creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+client = gspread.authorize(creds)
 
-    for ws in worksheets:
-        sheet_name = ws.title
-        headers = ws.row_values(1)
-        header_snapshot[sheet_name] = headers
+SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
+spreadsheet = client.open_by_key(SPREADSHEET_ID)
 
-        with st.expander(f"📄 {sheet_name}"):
-            # 🔁 Rename Sheet
-            new_name = st.text_input(f"Rename Sheet", value=sheet_name, key=f"rename_{sheet_name}")
-            if new_name != sheet_name:
-                if st.button(f"✅ Rename Sheet: {sheet_name} → {new_name}", key=f"btn_{sheet_name}"):
-                    ws.update_title(new_name)
-                    log_change("Rename Sheet", sheet_name, new_name)
-                    st.success("Sheet renamed. Please refresh.")
-                    st.stop()
+# Step 1: Choose sheet
+sheets = spreadsheet.worksheets()
+sheet_names = [ws.title for ws in sheets]
+selected_sheet_name = st.selectbox("📄 Select Sheet", sheet_names)
 
-            # ✏️ Header Editing Section
-            st.markdown("### ✏️ Column Headers:")
-            new_headers = []
-            if headers:
-                cols = st.columns(min(len(headers), 10))
-                for i, h in enumerate(headers):
-                    col = cols[i % len(cols)]
-                    color = "red" if not h.strip() or headers.count(h) > 1 else "black"
-                    new_val = col.text_input(f"Col {i+1}", value=h, key=f"{sheet_name}_h{i}")
-                    new_headers.append(new_val.strip())
-            else:
-                st.warning("⚠️ No headers found in this sheet.")
+ws = spreadsheet.worksheet(selected_sheet_name)
+headers = ws.row_values(1)
 
-            # 🧠 Check for issues
-            if headers:
-                if len(set(new_headers)) != len(new_headers):
-                    st.warning("⚠️ Duplicate column names detected.")
-                if any(h == "" for h in new_headers):
-                    st.warning("⚠️ Empty header names are not allowed.")
+# Step 2: Edit headers
+st.markdown("### ✏️ Edit Header Aliases")
+alias_map = {}
+for col in headers:
+    alias = st.text_input(f"Label for **{col}**", value=col)
+    alias_map[col] = alias
 
-            # 👀 Preview Mode
-            preview_mode = st.checkbox("Preview only (no changes)", value=True, key=f"preview_{sheet_name}")
-
-            if headers and new_headers != headers and not preview_mode:
-                if st.button(f"💾 Save Header Changes for {sheet_name}", key=f"save_{sheet_name}"):
-                    ws.delete_rows(1)
-                    ws.insert_row(new_headers, index=1)
-                    log_change("Update Headers", sheet_name, f"{headers} → {new_headers}")
-                    st.success("✅ Headers updated.")
-                    st.stop()
-
-            elif headers and new_headers != headers and preview_mode:
-                st.info("🧪 Preview mode enabled. No changes saved.")
-                st.write("Old:", headers)
-                st.write("New:", new_headers)
-
-    # ⬇️ Export all headers
-    st.download_button(
-        "⬇️ Export All Headers as JSON",
-        data=json.dumps(header_snapshot, indent=2),
-        file_name="sheet_headers.json",
-        mime="application/json"
-    )
-
-    # 💡 Generate config.py button
-    st.markdown("---")
-    if st.button("💡 Rebuild config.py from live headers"):
-        generate_config_py_from_headers(header_snapshot)
-        st.success("✅ config.py regenerated from current sheets.")
-
-def log_change(action, sheet, detail):
-    """Append change to 'Log' worksheet if exists, or create it"""
-    try:
-        log_ws = data.sheet.worksheet("Log")
-    except:
-        log_ws = data.sheet.add_worksheet(title="Log", rows=1000, cols=5)
-        log_ws.append_row(["Timestamp", "Action", "Sheet", "Details"])
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_ws.append_row([now, action, sheet, detail])
-
-def generate_config_py_from_headers(header_snapshot):
-    """Generate config.py dynamically"""
-    path = "config.py"
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("# Auto-generated config from Sheet Info View\n")
+# Step 3: Generate config.py
+if st.button("💾 Save & Generate config.py"):
+    config_path = os.path.join(os.getcwd(), "config.py")
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write("# Auto-generated header alias config\n")
         f.write("HEADER_ALIASES = {\n")
-        for sheet, headers in header_snapshot.items():
+        for sheet in sheet_names:
+            sheet_ws = spreadsheet.worksheet(sheet)
+            hdrs = sheet_ws.row_values(1)
             f.write(f'    "{sheet}": {{\n')
-            for h in headers:
-                key = h.lower().strip().replace(" ", "_").replace("(", "").replace(")", "")
+            for h in hdrs:
+                label = alias_map.get(h, h)
+                key = label.lower().replace(" ", "_").replace("(", "").replace(")", "")
                 f.write(f'        "{key}": "{h}",\n')
             f.write("    },\n")
         f.write("}\n")
+    st.success("✅ config.py generated successfully.")
+
+# Optional Preview
+with st.expander("🧬 Preview Generated HEADER_ALIASES"):
+    st.code(f"HEADER_ALIASES = { {s: {k.lower().replace(' ', '_'): k for k in spreadsheet.worksheet(s).row_values(1)} for s in sheet_names} }", language="python")
