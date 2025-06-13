@@ -41,17 +41,17 @@ def sheet_info_module():
             st.rerun()
 
     # === Edit Header Aliases (Compact Grid) ===
-st.markdown("### ✏️ Edit Header Aliases")
-edited_headers = []
-num_cols = 3  # adjust to 4 or 5 for tighter fit
+   st.markdown("### ✏️ Edit Header Aliases")
+   edited_headers = []
+   num_cols = 3  # adjust to 4 or 5 for tighter fit
 
-for i in range(0, len(headers), num_cols):
-    row = headers[i:i+num_cols]
-    cols = st.columns(len(row))
-    for j, h in enumerate(row):
-        with cols[j]:
-            new_val = st.text_input(f"{i+j+1}", value=h, key=f"header_{i+j}")
-            edited_headers.append(new_val)
+   for i in range(0, len(headers), num_cols):
+       row = headers[i:i+num_cols]
+       cols = st.columns(len(row))
+       for j, h in enumerate(row):
+           with cols[j]:
+               new_val = st.text_input(f"{i+j+1}", value=h, key=f"header_{i+j}")
+               edited_headers.append(new_val)
 
 
     # === Column Insert/Delete Section ===
