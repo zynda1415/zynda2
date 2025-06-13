@@ -13,10 +13,12 @@ def catalog_module():
         df = df[df.apply(lambda row: search.lower() in str(row[col["name"]]).lower()
                          or search.lower() in str(row[col["category"]]).lower()
                          or search.lower() in str(row.get(col["note"], "")).lower(), axis=1)]
+
     if category_filter != "All":
         df = df[df[col["category"]] == category_filter]
 
-        if st.button("📄 Export Visual Catalog to PDF"):
+    # ✅ Proper indentation of Export Button
+    if st.button("📄 Export Visual Catalog to PDF"):
         try:
             pdf_df = df.copy()
 
