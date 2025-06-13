@@ -71,12 +71,12 @@ def sheet_info_module():
 
     # 🕒 Backup + Generate config.py
     if st.button("⚙️ Regenerate config.py with updated aliases"):
-        # Backup first
         config_dir = os.getcwd()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(config_dir, f"config_backup_{timestamp}.py")
         main_path = os.path.join(config_dir, "config.py")
 
+        # Backup old config.py
         if os.path.exists(main_path):
             with open(main_path, "r", encoding="utf-8") as f:
                 with open(backup_path, "w", encoding="utf-8") as b:
