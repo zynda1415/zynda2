@@ -1,56 +1,51 @@
 import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
-import json
-import os
+import pandas as pd
+import data
+from utils import pdf_export
+from config import HEADER_ALIASES as H
 
-def sheet_info_module():
-    st.subheader("🧾 Sheet Info Manager")
+def inventory_view_module():
+    st.title("📦 Inventory Management")
 
-    # Connect to Google Sheets
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    client = gspread.authorize(creds)
-    SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
-    spreadsheet = client.open_by_key(SPREADSHEET_ID)
+    col = H["Inventory"]
+    df = data.load_inventory()
 
-    # Select sheet
-    sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-    selected_sheet = st.selectbox("📄 Select a sheet to manage:", sheet_names)
-    ws = spreadsheet.worksheet(selected_sheet)
-    headers = ws.row_values(1)
+    df[col["price"]] = pd.to_numeric(df[col["price"]], errors='coerce').fillna(0)
+    df[col["brand"]] = df[col["brand"]].astype(str)
 
-    # Display + editable alias mapping
-    st.markdown("### ✏️ Edit header aliases")
-    edited_headers = []
-    for i, col in enumerate(headers):
-        new_val = st.text_input(f"{i+1}. {col}", value=col)
-        edited_headers.append(new_val)
+    st.sidebar.header("🔎 Filters")
 
-    # Save changes back to the sheet
-    if st.button("💾 Save Edited Headers to Sheet"):
-        ws.update("1:1", [edited_headers])
-        st.success("✅ Headers updated successfully.")
+    search_query = st.sidebar.text_input("Search").lower()
+    categories = ["All"] + sorted(df[col["category"]].dropna().unique())
+    selected_category = st.sidebar.selectbox("Category", categories)
 
-    # Regenerate config.py
-    if st.button("⚙️ Regenerate config.py with updated aliases"):
-        config_path = os.path.join(os.getcwd(), "config.py")
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write("# Auto-generated header alias config\n")
-            f.write("HEADER_ALIASES = {\n")
-            for sheet in sheet_names:
-                ws = spreadsheet.worksheet(sheet)
-                hdrs = ws.row_values(1)
-                f.write(f'    "{sheet}": {{\n')
-                for h in hdrs:
-                    alias = h.strip().lower().replace(" ", "_").replace("(", "").replace(")", "")
-                    f.write(f'        "{alias}": "{h}",\n')
-                f.write("    },\n")
-            f.write("}\n")
-        st.success("✅ config.py regenerated.")
+    suppliers = ["All"] + sorted(df[col["brand"]].dropna().unique())
+    selected_supplier = st.sidebar.selectbox("Supplier", suppliers)
 
-    # Preview current generated config
-    with st.expander("🔎 Preview config.py aliases"):
-        preview = {sheet: {h.strip().lower().replace(" ", "_"): h for h in spreadsheet.worksheet(sheet).row_values(1)} for sheet in sheet_names}
-        st.code(f"HEADER_ALIASES = {preview}", language="python")
+    min_price = df[col["price"]].min()
+    max_price = df[col["price"]].max()
+    price_range = st.sidebar.slider("Sell Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
+
+    filtered_df = df.copy()
+
+    if search_query:
+        mask = df.apply(lambda row: search_query in str(row).lower(), axis=1)
+        filtered_df = filtered_df[mask]
+
+    if selected_category != "All":
+        filtered_df = filtered_df[filtered_df[col["category"]] == selected_category]
+
+    if selected_supplier != "All":
+        filtered_df = filtered_df[filtered_df[col["brand"]] == selected_supplier]
+
+    filtered_df = filtered_df[
+        (filtered_df[col["price"]] >= price_range[0]) &
+        (filtered_df[col["price"]] <= price_range[1])
+    ]
+
+    st.write(f"### Inventory Items ({len(filtered_df)} items)")
+    st.dataframe(filtered_df)
+
+    if st.button("Export to PDF"):
+        pdf_bytes = pdf_export.generate_pdf_table(filtered_df)
+        st.download_button("Download PDF", pdf_bytes, file_name="inventory.pdf")
