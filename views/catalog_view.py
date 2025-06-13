@@ -1,3 +1,4 @@
+# --- catalog_view.py ---
 import streamlit as st
 import math
 import data
@@ -51,8 +52,8 @@ def catalog_module():
 
     if st.button("📄 Export Visual Catalog to PDF"):
         pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(df)
-        st.success("✅ PDF Generated Successfully!")
-        st.download_button("📥 Download Visual Catalog PDF", data=pdf_bytes, file_name=filename)
+        st.success("PDF Generated Successfully!")
+        st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
 
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
@@ -81,7 +82,6 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
         for col, (_, row) in zip(cols, df.iloc[i:i+columns_per_row].iterrows()):
             with col:
                 with st.container():
-                    # 🔷 Product Image (Square)
                     st.markdown(f"""
                     <div style="
                         width: 200px; height: 200px; border-radius: 10px; overflow: hidden; 
@@ -91,18 +91,12 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # 🔷 Item Name
                     st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{row['Item Name']}</div>", unsafe_allow_html=True)
 
-                    # 🔷 Category
                     if show_category:
                         st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
-
-                    # 🔷 Price
                     if show_price:
                         st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
-
-                    # 🔷 Stock
                     if show_stock:
                         stock_qty = row['Quantity']
                         badge_color, badge_label = get_stock_badge(stock_qty)
@@ -110,7 +104,6 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                             f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
                             unsafe_allow_html=True)
 
-                    # 🔷 Barcode (RECTANGULAR)
                     if show_barcode and 'Barcode' in df.columns:
                         b64_barcode = barcode_utils.encode_image(row['Barcode'], barcode_type)
                         st.markdown(f"""
