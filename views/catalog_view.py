@@ -54,7 +54,7 @@ def catalog_module():
     df = apply_sort(df, sort_option)
 
     if st.button("📄 Export Visual Catalog to PDF"):
-        try:
+    try:
         # 🔹 Create a copy for PDF export
         pdf_df = df.copy()
 
@@ -101,7 +101,6 @@ def catalog_module():
     except Exception as e:
         st.error(f"Error generating PDF: {str(e)}")
         st.write("DataFrame columns available:", list(df.columns))
-
 
     start_idx = (page - 1) * items_per_page
     end_idx = start_idx + items_per_page
