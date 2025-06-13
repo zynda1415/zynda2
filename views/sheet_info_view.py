@@ -2,20 +2,33 @@ import streamlit as st
 import data
 
 def sheet_info_module():
-    st.title("📋 Sheet Info")
+    st.title("🛠️ Sheet & Header Editor")
 
-    # Pull Google Sheet object from data.py
-    gsheet = data.sheet  # uses the authenticated gspread client
+    gsheet = data.sheet
+    worksheets = gsheet.worksheets()
 
-    try:
-        worksheets = gsheet.worksheets()
+    for ws in worksheets:
+        old_name = ws.title
 
-        for ws in worksheets:
-            sheet_name = ws.title
-            headers = ws.row_values(1)  # get first row (column names)
+        with st.expander(f"🗂 {old_name}"):
+            new_name = st.text_input(f"Rename Sheet '{old_name}'", value=old_name, key=f"rename_{old_name}")
 
-            with st.expander(f"🗂 {sheet_name}"):
-                st.write("**Headers:**", headers)
+            if new_name != old_name:
+                if st.button(f"✅ Apply Sheet Rename: {old_name} → {new_name}", key=f"btn_{old_name}"):
+                    ws.update_title(new_name)
+                    st.success("Sheet renamed! Please reload app.")
 
-    except Exception as e:
-        st.error(f"Failed to load sheet info: {e}")
+            headers = ws.row_values(1)
+            st.markdown("### ✏️ Edit Column Headers:")
+            new_headers = []
+
+            cols = st.columns(len(headers))
+            for i, h in enumerate(headers):
+                new = cols[i].text_input(f"Col {i+1}", value=h, key=f"header_{old_name}_{i}")
+                new_headers.append(new)
+
+            if new_headers != headers:
+                if st.button(f"💾 Update Headers for {new_name}", key=f"save_headers_{old_name}"):
+                    ws.delete_rows(1)
+                    ws.insert_row(new_headers, index=1)
+                    st.success("Headers updated successfully.")
