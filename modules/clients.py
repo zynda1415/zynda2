@@ -1,65 +1,43 @@
 import streamlit as st
-import data
 import pandas as pd
+from config import HEADER_ALIASES
+from data import load_clients_data, save_clients_data
 
-def clients_module():
-    st.header("👥 Clients Management")
+H = HEADER_ALIASES["Clients"]
 
-    menu = st.radio("Select Action", ["View Clients", "Add Client", "Edit Client", "Delete Client"])
+def render_client_section():
+    st.title("👥 Clients")
 
-    df = data.load_clients()
+    df = load_clients_data()
 
-    if menu == "View Clients":
-        st.subheader("📋 All Clients")
-        st.dataframe(df)
+    if df.empty:
+        st.warning("No client data found.")
+        return
 
-    elif menu == "Add Client":
-        st.subheader("➕ Add New Client")
-        id = st.text_input("Client ID")
-        name = st.text_input("Client Name")
-        phone = st.text_input("Phone")
-        address = st.text_input("Address")
-        owner = st.text_input("Owner Name")
-        type_ = st.text_input("Type")
-        role = st.text_input("Role")
-        lat = st.number_input("Latitude", format="%.6f")
-        lon = st.number_input("Longitude", format="%.6f")
+    # === Filter
+    client_type = st.selectbox("Filter by Type", ["All"] + sorted(df[H["type"]].dropna().unique()))
+    if client_type != "All":
+        df = df[df[H["type"]] == client_type]
 
-        if st.button("Add Client"):
-            ws = data.sheet.worksheet("Clients")
-            ws.append_row([id, name, phone, address, owner, type_, role, lat, lon])
-            st.success("✅ Client added successfully!")
+    st.dataframe(df)
 
-    elif menu == "Edit Client":
-        st.subheader("✏️ Edit Client")
-        client_names = df['Client name'].tolist()
-        selected_client = st.selectbox("Select Client to Edit", client_names)
+    # === Add New Client
+    with st.expander("➕ Add New Client"):
+        with st.form("add_client_form", clear_on_submit=True):
+            client_id = st.text_input("Client ID")
+            name = st.text_input("Name")
+            phone = st.text_input("Phone")
+            address = st.text_area("Address")
+            type_ = st.selectbox("Type", ["Retail", "Wholesale", "Other"])
 
-        client_row = df[df['Client name'] == selected_client].iloc[0]
-
-        id = st.text_input("Client ID", client_row['ID'])
-        name = st.text_input("Client Name", client_row['Client name'])
-        phone = st.text_input("Phone", client_row['Phone'])
-        address = st.text_input("Address", client_row['Address'])
-        owner = st.text_input("Owner Name", client_row['Owner'])
-        type_ = st.text_input("Type", client_row['Type'])
-        role = st.text_input("Role", client_row['Role'])
-        lat = st.number_input("Latitude", format="%.6f", value=float(client_row['Latitude']))
-        lon = st.number_input("Longitude", format="%.6f", value=float(client_row['Longitude']))
-
-        if st.button("Update Client"):
-            ws = data.sheet.worksheet("Clients")
-            row_idx = df[df['Client name'] == selected_client].index[0] + 2  # +2 because sheet rows start at 1 plus header
-            ws.update(f"A{row_idx}:I{row_idx}", [[id, name, phone, address, owner, type_, role, lat, lon]])
-            st.success("✅ Client updated successfully!")
-
-    elif menu == "Delete Client":
-        st.subheader("🗑️ Delete Client")
-        client_names = df['Client name'].tolist()
-        selected_client = st.selectbox("Select Client to Delete", client_names)
-
-        if st.button("Delete Client"):
-            ws = data.sheet.worksheet("Clients")
-            row_idx = df[df['Client name'] == selected_client].index[0] + 2
-            ws.delete_rows(row_idx)
-            st.success("✅ Client deleted successfully!")
+            if st.form_submit_button("✅ Save Client"):
+                new_client = {
+                    H["id"]: client_id,
+                    H["name"]: name,
+                    H["phone"]: phone,
+                    H["address"]: address,
+                    H["type"]: type_
+                }
+                df = pd.concat([df, pd.DataFrame([new_client])], ignore_index=True)
+                save_clients_data(df)
+                st.success("Client added successfully.")
