@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-# ✅ FIXED: separate this line into two
+# Data and Sheet Info
 import data
 import views.sheet_info_view as sheet_info_view
 
@@ -34,7 +34,7 @@ def main():
         inventory_view.inventory_view_module()
 
     elif menu == "Item":
-        item.item_module()
+        item.render_item_section()
 
     elif menu == "Statistics":
         statistics_view.statistics_module()
@@ -55,14 +55,13 @@ def main():
         sales_charts.sales_charts_module()
 
     elif menu == "Clients Management":
-        clients.clients_module()
+        clients.render_client_section()
 
     elif menu == "Invoices":
         invoice.render_invoice_section()
         
     elif menu == "Sheet Info":
         sheet_info_view.sheet_info_module()
-
 
 if __name__ == "__main__":
     main()
