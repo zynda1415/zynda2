@@ -2,60 +2,53 @@ import streamlit as st
 import pandas as pd
 import data
 from utils import pdf_export
+from config import HEADER_ALIASES as H
 
 def inventory_view_module():
     st.title("📦 Inventory Management")
 
-    # 🔄 Load data
+    col = H["Inventory"]
     df = data.load_inventory()
 
-    # 🛡 Clean/prepare columns
-    if 'Sell Price' in df.columns:
-        df['Sell Price'] = pd.to_numeric(df['Sell Price'], errors='coerce').fillna(0)
-    else:
-        df['Sell Price'] = 0.0
+    # Clean Sell Price column
+    df[col["price"]] = pd.to_numeric(df[col["price"]], errors='coerce').fillna(0)
 
-    if 'Supplier' not in df.columns:
-        df['Supplier'] = "Unknown"
+    # Clean brand/supplier column to string
+    df[col["brand"]] = df[col["brand"]].astype(str)
 
     st.sidebar.header("🔎 Filters")
 
-    # 🔍 Search + Filters
     search_query = st.sidebar.text_input("Search").lower()
-
-    categories = ["All"] + sorted(df['Category'].dropna().unique()) if 'Category' in df.columns else ["All"]
+    categories = ["All"] + sorted(df[col["category"]].dropna().unique())
     selected_category = st.sidebar.selectbox("Category", categories)
 
-    suppliers = ["All"] + sorted(df['Supplier'].dropna().unique())
+    suppliers = ["All"] + sorted(df[col["brand"]].dropna().unique())
     selected_supplier = st.sidebar.selectbox("Supplier", suppliers)
 
-    min_price = df['Sell Price'].min()
-    max_price = df['Sell Price'].max()
+    min_price = df[col["price"]].min()
+    max_price = df[col["price"]].max()
     price_range = st.sidebar.slider("Sell Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
 
-    # 🧠 Apply filters
     filtered_df = df.copy()
 
     if search_query:
-        mask = filtered_df.apply(lambda row: search_query in str(row).lower(), axis=1)
+        mask = df.apply(lambda row: search_query in str(row).lower(), axis=1)
         filtered_df = filtered_df[mask]
 
     if selected_category != "All":
-        filtered_df = filtered_df[filtered_df['Category'] == selected_category]
+        filtered_df = filtered_df[filtered_df[col["category"]] == selected_category]
 
     if selected_supplier != "All":
-        filtered_df = filtered_df[filtered_df['Supplier'] == selected_supplier]
+        filtered_df = filtered_df[filtered_df[col["brand"]] == selected_supplier]
 
     filtered_df = filtered_df[
-        (filtered_df['Sell Price'] >= price_range[0]) &
-        (filtered_df['Sell Price'] <= price_range[1])
+        (filtered_df[col["price"]] >= price_range[0]) &
+        (filtered_df[col["price"]] <= price_range[1])
     ]
 
-    # 📊 Display data
     st.write(f"### Inventory Items ({len(filtered_df)} items)")
     st.dataframe(filtered_df)
 
-    # 📄 Export to PDF
     if st.button("Export to PDF"):
         pdf_bytes = pdf_export.generate_pdf_table(filtered_df)
         st.download_button("Download PDF", pdf_bytes, file_name="inventory.pdf")
