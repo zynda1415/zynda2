@@ -1,37 +1,49 @@
+import streamlit as st
 import gspread
 import pandas as pd
 import json
-import streamlit as st
 from google.oauth2.service_account import Credentials
 
-# 🔐 Google Sheets API Setup
-SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
-client = gspread.authorize(creds)
-
-# 📊 Spreadsheet connection
+# === Setup ===
 SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
-sheet = client.open_by_key(SPREADSHEET_ID)
+scope = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# 🔄 Loaders
-def load_inventory():
-    return pd.DataFrame(sheet.worksheet("Inventory").get_all_records())
+@st.cache_data(ttl=60)
+def connect_sheet():
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+    return client.open_by_key(SPREADSHEET_ID)
 
-def load_clients():
-    return pd.DataFrame(sheet.worksheet("Clients").get_all_records())
+# === Inventory ===
+def load_inventory_data():
+    sheet = connect_sheet().worksheet("Items")
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
 
-def load_sales():
-    return pd.DataFrame(sheet.worksheet("Sales").get_all_records())
+def save_inventory_data(df):
+    sheet = connect_sheet().worksheet("Items")
+    sheet.clear()
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
-def load_invoices():
-    return pd.DataFrame(sheet.worksheet("Invoices").get_all_records())
+# === Invoices ===
+def load_invoice_data():
+    sheet = connect_sheet().worksheet("Invoices")
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
 
-# 📥 Writers
-def save_sale(date, item, name, quantity_sold, unit_price, total_price):
-    ws = sheet.worksheet("Sales")
-    ws.append_row([date, item, name, quantity_sold, unit_price, total_price])
+def save_invoice_data(df):
+    sheet = connect_sheet().worksheet("Invoices")
+    sheet.clear()
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
-def add_invoice(invoice_data):
-    ws = sheet.worksheet("Invoices")
-    ws.append_row(list(invoice_data.values()))
+# === Clients ===
+def load_clients_data():
+    sheet = connect_sheet().worksheet("Clients")
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
+
+def save_clients_data(df):
+    sheet = connect_sheet().worksheet("Clients")
+    sheet.clear()
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
