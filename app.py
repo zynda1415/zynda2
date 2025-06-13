@@ -1,61 +1,62 @@
 import streamlit as st
-import pandas as pd
+from streamlit_option_menu import option_menu
+
 import data
-from utils import pdf_export
 
-def inventory_view_module():
-    st.title("📦 Inventory Management")
+# Views
+import views.inventory_view as inventory_view
+import views.statistics_view as statistics_view
+import views.catalog_view as catalog
 
-    # 🔄 Load data
-    df = data.load_inventory()
+# Modules
+import modules.item as item
+import modules.clients as clients
+import modules.invoice as invoice
+import modules.sales as sales
+import modules.sales_summary as sales_summary
+import modules.sales_charts as sales_charts
+import modules.mapview as mapview
 
-    # 🛡 Clean/prepare columns
-    if 'Sell Price' in df.columns:
-        df['Sell Price'] = pd.to_numeric(df['Sell Price'], errors='coerce').fillna(0)
-    else:
-        df['Sell Price'] = 0.0
+st.set_page_config(page_title="ZYNDA_SYSTEM Inventory Management", layout="wide")
 
-    if 'Supplier' not in df.columns:
-        df['Supplier'] = "Unknown"
+def main():
+    with st.sidebar:
+        menu = option_menu("ZYNDA_SYSTEM Menu", 
+            ["View Inventory", "Item", "Statistics", "Catalog View", "Map", 
+             "Sales", "Sales Summary", "Sales Charts", "Clients Management", "Invoices"],
+            icons=["box", "pencil-square", "bar-chart-line", "grid", "geo-alt", 
+                   "cash-coin", "clipboard-data", "graph-up-arrow", "people-fill", "file-earmark-text"],
+            menu_icon="grid-3x3-gap-fill", default_index=0)
 
-    st.sidebar.header("🔎 Filters")
+    if menu == "View Inventory":
+        inventory_view.inventory_view_module()
 
-    # 🔍 Search + Filters
-    search_query = st.sidebar.text_input("Search").lower()
+    elif menu == "Item":
+        item.item_module()
 
-    categories = ["All"] + sorted(df['Category'].dropna().unique()) if 'Category' in df.columns else ["All"]
-    selected_category = st.sidebar.selectbox("Category", categories)
+    elif menu == "Statistics":
+        statistics_view.statistics_module()
 
-    suppliers = ["All"] + sorted(df['Supplier'].dropna().unique())
-    selected_supplier = st.sidebar.selectbox("Supplier", suppliers)
+    elif menu == "Catalog View":
+        catalog.catalog_module()
 
-    min_price = df['Sell Price'].min()
-    max_price = df['Sell Price'].max()
-    price_range = st.sidebar.slider("Sell Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
+    elif menu == "Map":
+        mapview.map_module()
 
-    # 🧠 Apply filters
-    filtered_df = df.copy()
+    elif menu == "Sales":
+        sales.sales_module()
 
-    if search_query:
-        mask = filtered_df.apply(lambda row: search_query in str(row).lower(), axis=1)
-        filtered_df = filtered_df[mask]
+    elif menu == "Sales Summary":
+        sales_summary.sales_summary_module()
 
-    if selected_category != "All":
-        filtered_df = filtered_df[filtered_df['Category'] == selected_category]
+    elif menu == "Sales Charts":
+        sales_charts.sales_charts_module()
 
-    if selected_supplier != "All":
-        filtered_df = filtered_df[filtered_df['Supplier'] == selected_supplier]
+    elif menu == "Clients Management":
+        clients.clients_module()
 
-    filtered_df = filtered_df[
-        (filtered_df['Sell Price'] >= price_range[0]) &
-        (filtered_df['Sell Price'] <= price_range[1])
-    ]
+    elif menu == "Invoices":
+        invoice.render_invoice_section()
 
-    # 📊 Display data
-    st.write(f"### Inventory Items ({len(filtered_df)} items)")
-    st.dataframe(filtered_df)
-
-    # 📄 Export to PDF
-    if st.button("Export to PDF"):
-        pdf_bytes = pdf_export.generate_pdf_table(filtered_df)
-        st.download_button("Download PDF", pdf_bytes, file_name="inventory.pdf")
+if __name__ == "__main__":
+    main()
