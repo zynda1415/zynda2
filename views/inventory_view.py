@@ -8,7 +8,7 @@ def inventory_view_module():
 
     # 🔄 Load & clean inventory data
     df = data.load_inventory()
-    df['Sale Price'] = pd.to_numeric(df['Sale Price'], errors='coerce').fillna(0)
+    df['Sell Price'] = pd.to_numeric(df['Sell Price'], errors='coerce').fillna(0)
     df['Supplier'] = df['Supplier'].astype(str)
 
     # 🎛️ Sidebar Filters
@@ -21,9 +21,9 @@ def inventory_view_module():
     suppliers = ["All"] + sorted(df['Supplier'].dropna().unique())
     selected_supplier = st.sidebar.selectbox("Supplier", suppliers)
 
-    min_price = df['Sale Price'].min()
-    max_price = df['Sale Price'].max()
-    price_range = st.sidebar.slider("Sale Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
+    min_price = df['Sell Price'].min()
+    max_price = df['Sell Price'].max()
+    price_range = st.sidebar.slider("Sell Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
 
     # 🧠 Filtering Logic
     filtered_df = df.copy()
@@ -39,8 +39,10 @@ def inventory_view_module():
         filtered_df = filtered_df[filtered_df['Supplier'] == selected_supplier]
 
     filtered_df = filtered_df[
-        (filtered_df['Sale Price'] >= price_range[0]) &
-        (filtered_df['Sale Price'] <= price_range[1])
+        (filtered_df['Sell Price'] >= price_range[0]) &
+        (filtered_df['Sell Price'] <= price_range[1])
+]
+
     ]
 
     # 📋 Display Data
