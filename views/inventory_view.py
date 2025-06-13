@@ -6,14 +6,12 @@ from utils import pdf_export
 def inventory_view_module():
     st.title("📦 Inventory Management")
 
+    # 🔄 Load & clean inventory data
     df = data.load_inventory()
-
-    # Clean Sale Price column
     df['Sale Price'] = pd.to_numeric(df['Sale Price'], errors='coerce').fillna(0)
-
-    # Clean Supplier column to string (IMPORTANT FIX)
     df['Supplier'] = df['Supplier'].astype(str)
 
+    # 🎛️ Sidebar Filters
     st.sidebar.header("🔎 Filters")
 
     search_query = st.sidebar.text_input("Search").lower()
@@ -27,10 +25,11 @@ def inventory_view_module():
     max_price = df['Sale Price'].max()
     price_range = st.sidebar.slider("Sale Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
 
+    # 🧠 Filtering Logic
     filtered_df = df.copy()
 
     if search_query:
-        mask = df.apply(lambda row: search_query in str(row).lower(), axis=1)
+        mask = filtered_df.apply(lambda row: search_query in str(row).lower(), axis=1)
         filtered_df = filtered_df[mask]
 
     if selected_category != "All":
@@ -44,9 +43,11 @@ def inventory_view_module():
         (filtered_df['Sale Price'] <= price_range[1])
     ]
 
+    # 📋 Display Data
     st.write(f"### Inventory Items ({len(filtered_df)} items)")
     st.dataframe(filtered_df)
 
+    # 📤 Export to PDF
     if st.button("Export to PDF"):
         pdf_bytes = pdf_export.generate_pdf_table(filtered_df)
         st.download_button("Download PDF", pdf_bytes, file_name="inventory.pdf")
