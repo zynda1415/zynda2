@@ -1,51 +1,71 @@
 import streamlit as st
-import pandas as pd
-import data
-from utils import pdf_export
-from config import HEADER_ALIASES as H
+import gspread
+from google.oauth2.service_account import Credentials
+import json
+import os
 
-def inventory_view_module():
-    st.title("📦 Inventory Management")
+def sheet_info_module():
+    st.subheader("🧾 Sheet Info Manager")
 
-    col = H["Inventory"]
-    df = data.load_inventory()
+    # Connect to Google Sheets
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+    SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
+    spreadsheet = client.open_by_key(SPREADSHEET_ID)
 
-    df[col["price"]] = pd.to_numeric(df[col["price"]], errors='coerce').fillna(0)
-    df[col["brand"]] = df[col["brand"]].astype(str)
+    # Select sheet
+    sheet_names = [ws.title for ws in spreadsheet.worksheets()]
+    selected_sheet = st.selectbox("📄 Select a sheet to manage:", sheet_names)
+    ws = spreadsheet.worksheet(selected_sheet)
 
-    st.sidebar.header("🔎 Filters")
+    # Sheet rename
+    with st.expander("✏️ Rename this sheet"):
+        new_name = st.text_input("New name:", value=selected_sheet)
+        if new_name and new_name != selected_sheet:
+            if st.button(f"✅ Rename '{selected_sheet}' → '{new_name}'"):
+                ws.update_title(new_name)
+                st.success(f"✅ Sheet renamed to '{new_name}'. Refresh to continue.")
+                st.stop()
 
-    search_query = st.sidebar.text_input("Search").lower()
-    categories = ["All"] + sorted(df[col["category"]].dropna().unique())
-    selected_category = st.sidebar.selectbox("Category", categories)
+    headers = ws.row_values(1)
 
-    suppliers = ["All"] + sorted(df[col["brand"]].dropna().unique())
-    selected_supplier = st.sidebar.selectbox("Supplier", suppliers)
+    # Display + editable alias mapping
+    st.markdown("### ✏️ Edit header aliases")
+    edited_headers = []
+    for i, col in enumerate(headers):
+        new_val = st.text_input(f"{i+1}. {col}", value=col, key=f"header_{i}")
+        edited_headers.append(new_val)
 
-    min_price = df[col["price"]].min()
-    max_price = df[col["price"]].max()
-    price_range = st.sidebar.slider("Sell Price Range", float(min_price), float(max_price), (float(min_price), float(max_price)))
+    # Save changes back to the sheet
+    if st.button("💾 Save Edited Headers to Sheet"):
+        ws.update("1:1", [edited_headers])
+        st.success("✅ Headers updated successfully.")
 
-    filtered_df = df.copy()
+    # Regenerate config.py
+    if st.button("⚙️ Regenerate config.py with updated aliases"):
+        config_path = os.path.join(os.getcwd(), "config.py")
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write("# Auto-generated header alias config\n")
+            f.write("HEADER_ALIASES = {\n")
+            for sheet in spreadsheet.worksheets():
+                hdrs = sheet.row_values(1)
+                f.write(f'    "{sheet.title}": {{\n')
+                for h in hdrs:
+                    alias = h.strip().lower().replace(" ", "_").replace("(", "").replace(")", "")
+                    f.write(f'        "{alias}": "{h}",\n')
+                f.write("    },\n")
+            f.write("}\n")
+        st.success("✅ config.py regenerated.")
 
-    if search_query:
-        mask = df.apply(lambda row: search_query in str(row).lower(), axis=1)
-        filtered_df = filtered_df[mask]
-
-    if selected_category != "All":
-        filtered_df = filtered_df[filtered_df[col["category"]] == selected_category]
-
-    if selected_supplier != "All":
-        filtered_df = filtered_df[filtered_df[col["brand"]] == selected_supplier]
-
-    filtered_df = filtered_df[
-        (filtered_df[col["price"]] >= price_range[0]) &
-        (filtered_df[col["price"]] <= price_range[1])
-    ]
-
-    st.write(f"### Inventory Items ({len(filtered_df)} items)")
-    st.dataframe(filtered_df)
-
-    if st.button("Export to PDF"):
-        pdf_bytes = pdf_export.generate_pdf_table(filtered_df)
-        st.download_button("Download PDF", pdf_bytes, file_name="inventory.pdf")
+    # Preview current generated config
+    with st.expander("🔎 Preview config.py aliases"):
+        preview = {
+            sheet.title: {
+                h.strip().lower().replace(" ", "_"): h
+                for h in sheet.row_values(1)
+            }
+            for sheet in spreadsheet.worksheets()
+        }
+        st.code(f"HEADER_ALIASES = {json.dumps(preview, indent=4)}", language="python")
