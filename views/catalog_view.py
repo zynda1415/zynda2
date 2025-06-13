@@ -85,7 +85,9 @@ def catalog_module():
                 if col not in pdf_df.columns:
                     pdf_df[col] = default_val
             
-            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(pdf_df)
+            pdf_layout_options = pdf_customization_controls()
+            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(pdf_df, **pdf_layout_options)
+
             st.success("PDF Generated Successfully!")
             st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
             
