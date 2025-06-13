@@ -1,35 +1,21 @@
-from fpdf import FPDF
-import io
-from PIL import Image
-import requests
-from barcode import Code128
-from barcode.writer import ImageWriter
-
-def download_image(image_url):
-    try:
-        response = requests.get(image_url)
-        if response.status_code == 200:
-            return Image.open(io.BytesIO(response.content))
-    except:
-        return None
-
-def generate_barcode_image(data):
-    try:
-        barcode = Code128(data, writer=ImageWriter())
-        buffer = io.BytesIO()
-        barcode.write(buffer)
-        buffer.seek(0)
-        return Image.open(buffer)
-    except:
-        return None
-
 def generate_catalog_pdf_visual(
     df,
-    image_position="Top",
-    name_font_size=10,
-    stack_text=True,
-    show_barcode=True
+    show_category=True,
+    show_price=True,
+    show_stock=True,
+    show_barcode=True,
+    barcode_type="Code128",
+    color_option="Light",
+    export_layout="Grid",
+    include_cover_page=False,
+    logo_path=None,
+    language='EN',
+    selected_categories=None,
+    selected_brands=None
 ):
+    from config import HEADER_ALIASES
+    H = HEADER_ALIASES["Inventory"]
+
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_font('DejaVu', '', 'preview/DejaVuSans.ttf', uni=True)
     pdf.set_auto_page_break(auto=True, margin=10)
@@ -52,17 +38,16 @@ def generate_catalog_pdf_visual(
         pdf.set_fill_color(245, 245, 245)
         pdf.rect(x, y, card_w, card_h, 'F')
 
-        item_name = str(row.get('Item Name (English)', ''))
-        price = str(row.get('Sell Price', ''))
-        brand = str(row.get('Brand', ''))
-        image_url = row.get('Image URL', '')
-        barcode_data = row.get('Barcode', '')
+        item_name = str(row.get(H["name"], ''))
+        price = str(row.get(H["price"], ''))
+        brand = str(row.get(H["brand"], ''))
+        image_url = row.get(H["image"], '')
+        barcode_data = row.get(H["barcode"], '')
 
-        # Draw item
         cursor_y = y + 2
-        pdf.set_font('DejaVu', '', name_font_size)
+        pdf.set_font('DejaVu', '', 10)
 
-        if image_position == "Top" and image_url:
+        if image_url:
             img = download_image(image_url)
             if img:
                 img.thumbnail((card_w - 8, 25))
@@ -76,27 +61,23 @@ def generate_catalog_pdf_visual(
         pdf.multi_cell(card_w - 4, 5, item_name)
         cursor_y = pdf.get_y()
 
-        pdf.set_xy(x + 2, cursor_y)
-        if stack_text:
+        if show_price:
+            pdf.set_xy(x + 2, cursor_y)
             pdf.cell(card_w - 4, 5, f"Price: {price}", ln=1)
-            pdf.cell(card_w - 4, 5, f"Brand: {brand}", ln=1)
-            cursor_y = pdf.get_y()
-        else:
-            pdf.cell((card_w - 4) / 2, 5, f"P: {price}", ln=0)
-            pdf.cell((card_w - 4) / 2, 5, f"B: {brand}", ln=1)
             cursor_y = pdf.get_y()
 
-        if image_position == "Bottom" and image_url:
-            img = download_image(image_url)
-            if img:
-                img.thumbnail((card_w - 8, 25))
-                buf = io.BytesIO()
-                img.save(buf, format='PNG')
-                buf.seek(0)
-                pdf.image(buf, x + 4, cursor_y, w=card_w - 8)
-                cursor_y += 26
+        if show_category:
+            category = str(row.get(H["category"], ''))
+            pdf.set_xy(x + 2, cursor_y)
+            pdf.cell(card_w - 4, 5, f"Category: {category}", ln=1)
+            cursor_y = pdf.get_y()
 
-        # Barcode
+        if show_stock:
+            stock = str(row.get(H.get("stock", ""), ''))
+            pdf.set_xy(x + 2, cursor_y)
+            pdf.cell(card_w - 4, 5, f"Stock: {stock}", ln=1)
+            cursor_y = pdf.get_y()
+
         if show_barcode and barcode_data:
             barcode_img = generate_barcode_image(barcode_data)
             if barcode_img:
