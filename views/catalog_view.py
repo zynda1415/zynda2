@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 import math
 import pandas as pd
@@ -5,6 +8,7 @@ from config import HEADER_ALIASES
 from data import load_inventory_data
 from preview import customization, style, barcode_utils, pdf_Customization
 from utils import pdf_export
+
 
 # Set inventory alias
 H = HEADER_ALIASES["Inventory"]
