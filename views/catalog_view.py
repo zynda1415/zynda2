@@ -16,8 +16,7 @@ def catalog_module():
     if category_filter != "All":
         df = df[df[col["category"]] == category_filter]
 
-    ...
-    if st.button("📄 Export Visual Catalog to PDF"):
+        if st.button("📄 Export Visual Catalog to PDF"):
         try:
             pdf_df = df.copy()
 
@@ -44,4 +43,19 @@ def catalog_module():
                 if c not in pdf_df.columns:
                     pdf_df[c] = default_val
 
-            ...
+            # ⬇️ Customize layout and generate PDF
+            pdf_options = pdf_customization_controls()
+            pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(
+                pdf_df,
+                image_position=pdf_options["image_position"],
+                name_font_size=pdf_options["name_font_size"],
+                stack_text=pdf_options["stack_text"],
+                show_barcode=pdf_options["show_barcode_pdf"]
+            )
+
+            st.success("PDF Generated Successfully!")
+            st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
+
+        except Exception as e:
+            st.error(f"Error generating PDF: {str(e)}")
+            st.write("DataFrame columns available:", list(df.columns))
