@@ -59,7 +59,7 @@ def main():
     elif menu == "Invoices":
         invoice.render_invoice_section()
         
-    elif page == "Sheet Info":
+    elif menu == "Sheet Info":
         sheet_info_view.sheet_info_module()
 
 
