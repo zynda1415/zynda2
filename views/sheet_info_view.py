@@ -6,9 +6,10 @@ import os
 from datetime import datetime
 
 def sheet_info_module():
-    st.subheader("🧾 Sheet Info Manager")
+    st.title("🗂️ Sheet Info Manager")
+    st.markdown("Manage sheets, headers, and configuration for dynamic integration.")
 
-    # Connect to Google Sheets
+    # Authenticate & Load Google Sheet
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
     creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
@@ -16,73 +17,83 @@ def sheet_info_module():
     SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
     spreadsheet = client.open_by_key(SPREADSHEET_ID)
 
-    # ➕ Create new sheet
+    # === Create New Sheet ===
     with st.expander("➕ Create New Sheet"):
-        new_sheet_name = st.text_input("New Sheet Name")
+        new_sheet_name = st.text_input("New Sheet Name", placeholder="e.g. Products2025")
         if st.button("📄 Create Sheet"):
             try:
                 spreadsheet.add_worksheet(title=new_sheet_name, rows=100, cols=20)
-                st.success(f"Sheet '{new_sheet_name}' created. Refresh to see it.")
+                st.success(f"✅ Sheet '{new_sheet_name}' created. Refresh to view.")
             except Exception as e:
-                st.error(f"Failed to create sheet: {e}")
+                st.error(f"❌ Failed to create sheet: {e}")
 
-    # Select sheet
+    # === Sheet Selection & Metadata ===
     sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-    selected_sheet = st.selectbox("📄 Select a sheet to manage:", sheet_names)
+    selected_sheet = st.selectbox("📑 Select Sheet to Edit", sheet_names)
     ws = spreadsheet.worksheet(selected_sheet)
-
-    # ✏️ Rename sheet
-    with st.expander("✏️ Rename this sheet"):
-        new_name = st.text_input("New name:", value=selected_sheet)
-        if new_name and new_name != selected_sheet:
-            if st.button(f"✅ Rename '{selected_sheet}' → '{new_name}'"):
-                ws.update_title(new_name)
-                st.success(f"✅ Sheet renamed to '{new_name}'. Refresh to continue.")
-                st.stop()
-
     headers = ws.row_values(1)
 
-    # ➖ Column delete/insert
-    with st.expander("🗂 Column Management"):
-        col_to_delete = st.selectbox("Select column to delete", headers)
-        if st.button("🗑️ Delete Column"):
-            idx = headers.index(col_to_delete) + 1
-            ws.delete_columns(idx)
-            st.success(f"Deleted column: {col_to_delete}")
-            st.stop()
+    col1, col2 = st.columns([1.5, 1])
+    with col1:
+        st.markdown(f"### 📝 Header Aliases ({len(headers)} columns)")
+    with col2:
+        if st.button("🔄 Refresh Sheet List"):
+            st.rerun()
 
-        new_col_name = st.text_input("Insert new column name")
-        insert_at = st.number_input("Insert at position", min_value=1, max_value=len(headers)+1, value=len(headers)+1)
-        if st.button("➕ Insert Column"):
-            ws.insert_cols([[new_col_name]], col=insert_at)
-            st.success(f"Inserted '{new_col_name}' at position {insert_at}")
-            st.stop()
+    # === Edit Header Aliases ===
+    with st.form("edit_headers_form"):
+        edited_headers = []
+        for i, col in enumerate(headers):
+            new_val = st.text_input(f"{i+1}.", value=col, key=f"header_{i}")
+            edited_headers.append(new_val)
+        save = st.form_submit_button("💾 Save Headers to Sheet")
+        if save:
+            ws.update("1:1", [edited_headers])
+            st.success("✅ Headers updated successfully.")
 
-    # 🧾 Edit headers
-    st.markdown("### ✏️ Edit header aliases")
-    edited_headers = []
-    for i, col in enumerate(headers):
-        new_val = st.text_input(f"{i+1}. {col}", value=col, key=f"header_{i}")
-        edited_headers.append(new_val)
+    # === Column Insert/Delete Section ===
+    with st.expander("🛠️ Column Management"):
+        col1, col2 = st.columns(2)
 
-    if st.button("💾 Save Edited Headers to Sheet"):
-        ws.update("1:1", [edited_headers])
-        st.success("✅ Headers updated successfully.")
+        with col1:
+            col_to_delete = st.selectbox("🗑️ Delete column", headers, key="del_col")
+            if st.button("Delete Selected Column"):
+                idx = headers.index(col_to_delete) + 1
+                ws.delete_columns(idx)
+                st.success(f"✅ Deleted column: {col_to_delete}")
+                st.stop()
 
-    # 🕒 Backup + Generate config.py
-    if st.button("⚙️ Regenerate config.py with updated aliases"):
+        with col2:
+            new_col_name = st.text_input("➕ Column Name", key="new_col")
+            insert_at = st.number_input("Insert at (1-indexed)", min_value=1, max_value=len(headers)+1, value=len(headers)+1)
+            if st.button("Insert Column"):
+                ws.insert_cols([[new_col_name]], col=int(insert_at))
+                st.success(f"✅ Inserted '{new_col_name}' at position {insert_at}")
+                st.stop()
+
+    # === Sheet Rename Section ===
+    with st.expander("✏️ Rename Sheet"):
+        new_name = st.text_input("Rename To", value=selected_sheet, key="rename_sheet")
+        if new_name and new_name != selected_sheet:
+            if st.button("✅ Apply Rename"):
+                ws.update_title(new_name)
+                st.success(f"✅ Renamed sheet to: {new_name}")
+                st.stop()
+
+    # === Regenerate Config.py with Backup ===
+    if st.button("⚙️ Regenerate config.py (with backup)"):
         config_dir = os.getcwd()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(config_dir, f"config_backup_{timestamp}.py")
         main_path = os.path.join(config_dir, "config.py")
 
-        # Backup old config.py
+        # Backup old config
         if os.path.exists(main_path):
             with open(main_path, "r", encoding="utf-8") as f:
                 with open(backup_path, "w", encoding="utf-8") as b:
                     b.write(f.read())
 
-        # Generate new config.py
+        # Generate new config
         with open(main_path, "w", encoding="utf-8") as f:
             f.write("# Auto-generated header alias config\n")
             f.write("HEADER_ALIASES = {\n")
@@ -96,8 +107,8 @@ def sheet_info_module():
             f.write("}\n")
         st.success("✅ config.py regenerated with backup saved.")
 
-    # Preview config.py content
-    with st.expander("🔎 Preview config.py aliases"):
+    # === Preview Config ===
+    with st.expander("📁 Preview Generated config.py"):
         preview = {
             sheet.title: {
                 h.strip().lower().replace(" ", "_"): h
