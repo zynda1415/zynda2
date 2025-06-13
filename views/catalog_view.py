@@ -1,10 +1,13 @@
 import streamlit as st
 import math
 import pandas as pd
-from config import HEADER_ALIASES as H
+from config import HEADER_ALIASES
 from data import load_inventory_data
 from preview import customization, style, barcode_utils, pdf_Customization
 from utils import pdf_export
+
+# Set inventory alias
+H = HEADER_ALIASES["Inventory"]
 
 def catalog_module():
     st.header("📘 View Catalog")
@@ -25,9 +28,9 @@ def catalog_module():
     with col1:
         search = st.text_input("🔍 Search", placeholder="Name, Category, Note...")
     with col2:
-        category_filter = st.selectbox("📁 Category", ["All"] + sorted(df[H["Category 1"]].dropna().unique()))
+        category_filter = st.selectbox("📁 Category", ["All"] + sorted(df[H["category"]].dropna().unique()))
     with col3:
-        brand_filter = st.selectbox("🏷️ Brand", ["All"] + sorted(df[H["Brand"]].dropna().unique()))
+        brand_filter = st.selectbox("🏷️ Brand", ["All"] + sorted(df[H["brand"]].dropna().unique()))
     with col4:
         columns_per_row = st.slider("📐 Columns", 1, 5, 3)
 
@@ -36,15 +39,15 @@ def catalog_module():
     if search:
         search_lower = search.lower()
         filtered_df = filtered_df[filtered_df.apply(
-            lambda row: search_lower in str(row.get(H["Item Name (English)"], "")).lower()
-            or search_lower in str(row.get(H["Category 1"], "")).lower()
-            or search_lower in str(row.get(H["Note"], "")).lower(),
+            lambda row: search_lower in str(row.get(H["name"], "")).lower()
+            or search_lower in str(row.get(H["category"], "")).lower()
+            or search_lower in str(row.get(H["note"], "")).lower(),
             axis=1
         )]
     if category_filter != "All":
-        filtered_df = filtered_df[filtered_df[H["Category 1"]] == category_filter]
+        filtered_df = filtered_df[filtered_df[H["category"]] == category_filter]
     if brand_filter != "All":
-        filtered_df = filtered_df[filtered_df[H["Brand"]] == brand_filter]
+        filtered_df = filtered_df[filtered_df[H["brand"]] == brand_filter]
 
     # === Display Cards ===
     render_cards(filtered_df, columns_per_row, show_category, show_price, show_stock,
@@ -77,15 +80,15 @@ def render_cards(df, cols, show_category, show_price, show_stock, show_barcode,
             row = df.iloc[idx]
             with card_row[i]:
                 style.render_card(
-                    name=row.get(H["Item Name (English)"], "Unnamed"),
-                    image_url=row.get(H["Image"], ""),
-                    price=row.get(H["Sell Price"], ""),
-                    category=row.get(H["Category 1"], ""),
-                    note=row.get(H["Note"], ""),
-                    brand=row.get(H["Brand"], ""),
-                    stock=row.get(H.get("Stock", ""), "N/A"),
-                    code=row.get(H["Code"], ""),
-                    barcode=row.get(H["Barcode"], ""),
+                    name=row.get(H["name"], "Unnamed"),
+                    image_url=row.get(H["image"], ""),
+                    price=row.get(H["price"], ""),
+                    category=row.get(H["category"], ""),
+                    note=row.get(H["note"], ""),
+                    brand=row.get(H["brand"], ""),
+                    stock=row.get(H.get("stock", ""), "N/A"),
+                    code=row.get(H.get("code", ""), ""),
+                    barcode=row.get(H.get("barcode", ""), ""),
                     show_category=show_category,
                     show_price=show_price,
                     show_stock=show_stock,
