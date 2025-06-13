@@ -1,3 +1,29 @@
+from fpdf import FPDF
+import io
+from PIL import Image
+import requests
+from barcode import Code128
+from barcode.writer import ImageWriter
+from config import HEADER_ALIASES
+
+def download_image(image_url):
+    try:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            return Image.open(io.BytesIO(response.content))
+    except:
+        return None
+
+def generate_barcode_image(data):
+    try:
+        barcode = Code128(data, writer=ImageWriter())
+        buffer = io.BytesIO()
+        barcode.write(buffer)
+        buffer.seek(0)
+        return Image.open(buffer)
+    except:
+        return None
+
 def generate_catalog_pdf_visual(
     df,
     show_category=True,
@@ -13,7 +39,6 @@ def generate_catalog_pdf_visual(
     selected_categories=None,
     selected_brands=None
 ):
-    from config import HEADER_ALIASES
     H = HEADER_ALIASES["Inventory"]
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -26,7 +51,7 @@ def generate_catalog_pdf_visual(
     x, y = x_start, y_start
     spacing = 5
 
-    for idx, row in df.iterrows():
+    for _, row in df.iterrows():
         if x + card_w > 200:
             x = x_start
             y += card_h + spacing
@@ -41,12 +66,15 @@ def generate_catalog_pdf_visual(
         item_name = str(row.get(H["name"], ''))
         price = str(row.get(H["price"], ''))
         brand = str(row.get(H["brand"], ''))
+        category = str(row.get(H["category"], ''))
+        stock = str(row.get(H.get("stock", ""), ''))
         image_url = row.get(H["image"], '')
-        barcode_data = row.get(H["barcode"], '')
+        barcode_data = row.get(H.get("barcode", ""), '')
 
         cursor_y = y + 2
         pdf.set_font('DejaVu', '', 10)
 
+        # Image
         if image_url:
             img = download_image(image_url)
             if img:
@@ -57,27 +85,35 @@ def generate_catalog_pdf_visual(
                 pdf.image(buf, x + 4, cursor_y, w=card_w - 8)
                 cursor_y += 26
 
+        # Item Name
         pdf.set_xy(x + 2, cursor_y)
         pdf.multi_cell(card_w - 4, 5, item_name)
         cursor_y = pdf.get_y()
 
+        # Price
         if show_price:
             pdf.set_xy(x + 2, cursor_y)
             pdf.cell(card_w - 4, 5, f"Price: {price}", ln=1)
             cursor_y = pdf.get_y()
 
+        # Brand
+        pdf.set_xy(x + 2, cursor_y)
+        pdf.cell(card_w - 4, 5, f"Brand: {brand}", ln=1)
+        cursor_y = pdf.get_y()
+
+        # Category
         if show_category:
-            category = str(row.get(H["category"], ''))
             pdf.set_xy(x + 2, cursor_y)
             pdf.cell(card_w - 4, 5, f"Category: {category}", ln=1)
             cursor_y = pdf.get_y()
 
+        # Stock
         if show_stock:
-            stock = str(row.get(H.get("stock", ""), ''))
             pdf.set_xy(x + 2, cursor_y)
             pdf.cell(card_w - 4, 5, f"Stock: {stock}", ln=1)
             cursor_y = pdf.get_y()
 
+        # Barcode
         if show_barcode and barcode_data:
             barcode_img = generate_barcode_image(barcode_data)
             if barcode_img:
