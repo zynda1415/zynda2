@@ -1,7 +1,9 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-import dataimport views.sheet_info_view as sheet_info_view
+# ✅ FIXED: separate this line into two
+import data
+import views.sheet_info_view as sheet_info_view
 
 # Views
 import views.inventory_view as inventory_view
