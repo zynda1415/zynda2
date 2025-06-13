@@ -98,8 +98,9 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
 
                     if show_category:
                         st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {row['Category']}</div>", unsafe_allow_html=True)
-                    if show_price:
+                    if show_price and 'Sale Price' in row:
                         st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${row['Sale Price']:.2f}</div>", unsafe_allow_html=True)
+
                     if show_stock:
                         stock_qty = row['Quantity']
                         badge_color, badge_label = get_stock_badge(stock_qty)
