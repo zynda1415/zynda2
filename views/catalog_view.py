@@ -21,8 +21,7 @@ def catalog_module():
 
     df = data.load_inventory()
     
-    # 🔹 DEBUG: Print column names to identify the issue
-    st.write("DEBUG - DataFrame columns:", list(df.columns))
+    # Column names should now be consistent
 
     (show_category, show_price, show_stock, show_barcode, layout_style, 
      color_option, image_fit, barcode_type, export_layout, include_cover_page) = customization.customization_controls(df)
@@ -46,7 +45,7 @@ def catalog_module():
         page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
 
     if search:
-        df = df[df.apply(lambda row: search.lower() in str(row['Item Name']).lower() 
+        df = df[df.apply(lambda row: search.lower() in str(row['Item Name (English)']).lower() 
                          or search.lower() in str(row['Category']).lower()
                          or search.lower() in str(row.get('Notes', '')).lower(), axis=1)]
     if category_filter != "All":
@@ -56,45 +55,18 @@ def catalog_module():
 
     if st.button("📄 Export Visual Catalog to PDF"):
         try:
-            # 🔹 Create a copy for PDF export and ensure consistent column names
+            # 🔹 Create a copy for PDF export
             pdf_df = df.copy()
             
-            # 🔹 Standardize column names for PDF export
-            column_mapping = {}
-            
-            # Map price columns (handle both possible names)
-            if 'Sale Price' in pdf_df.columns:
-                column_mapping['Sale Price'] = 'Sell Price'
-            elif 'Sell Price' in pdf_df.columns:
-                pass  # Already correct
-            elif 'Price' in pdf_df.columns:
-                column_mapping['Price'] = 'Sell Price'
-                
-            # Map brand/supplier columns
-            if 'Supplier' in pdf_df.columns:
-                column_mapping['Supplier'] = 'Brand'
-            elif 'Brand' in pdf_df.columns:
-                pass  # Already correct
-                
-            # Map other potential column names
-            if 'Item Name' in pdf_df.columns:
-                column_mapping['Item Name'] = 'Item Name (English)'
-            elif 'Item Name (English)' in pdf_df.columns:
-                pass  # Already correct
-                
-            if 'Quantity' in pdf_df.columns:
-                column_mapping['Quantity'] = 'Stock'
-            elif 'Stock' in pdf_df.columns:
-                pass  # Already correct
-                
-            if 'Category' in pdf_df.columns:
-                column_mapping['Category'] = 'Category 1'
-            elif 'Category 1' in pdf_df.columns:
-                pass  # Already correct
-                
-            # Apply the column mapping
-            if column_mapping:
-                pdf_df = pdf_df.rename(columns=column_mapping)
+            # 🔹 Your columns already match most PDF requirements, just need a few mappings
+            if 'Supplier' in pdf_df.columns and 'Brand' not in pdf_df.columns:
+                pdf_df['Brand'] = pdf_df['Supplier']
+            if 'Quantity' in pdf_df.columns and 'Stock' not in pdf_df.columns:
+                pdf_df['Stock'] = pdf_df['Quantity']
+            if 'Category' in pdf_df.columns and 'Category 1' not in pdf_df.columns:
+                pdf_df['Category 1'] = pdf_df['Category']
+            if 'Notes' in pdf_df.columns and 'Note' not in pdf_df.columns:
+                pdf_df['Note'] = pdf_df['Notes']
             
             # 🔹 Ensure required columns exist with default values
             required_columns = {
@@ -108,6 +80,7 @@ def catalog_module():
                 'Barcode': ''
             }
             
+            # Add missing columns with defaults
             for col, default_val in required_columns.items():
                 if col not in pdf_df.columns:
                     pdf_df[col] = default_val
@@ -128,32 +101,16 @@ def catalog_module():
                  color_option, image_fit, barcode_type)
 
 def apply_sort(df, sort_option):
-    # 🔹 Handle different possible price column names
-    price_col = None
-    if 'Sale Price' in df.columns:
-        price_col = 'Sale Price'
-    elif 'Sell Price' in df.columns:
-        price_col = 'Sell Price'
-    elif 'Price' in df.columns:
-        price_col = 'Price'
-    
-    # 🔹 Handle different possible stock column names
-    stock_col = None
-    if 'Quantity' in df.columns:
-        stock_col = 'Quantity'
-    elif 'Stock' in df.columns:
-        stock_col = 'Stock'
-    
     if sort_option == "Item Name (A-Z)":
-        return df.sort_values(by='Item Name', ascending=True)
-    elif sort_option == "Price (Low-High)" and price_col:
-        return df.sort_values(by=price_col, ascending=True)
-    elif sort_option == "Price (High-Low)" and price_col:
-        return df.sort_values(by=price_col, ascending=False)
-    elif sort_option == "Stock (Low-High)" and stock_col:
-        return df.sort_values(by=stock_col, ascending=True)
-    elif sort_option == "Stock (High-Low)" and stock_col:
-        return df.sort_values(by=stock_col, ascending=False)
+        return df.sort_values(by='Item Name (English)', ascending=True)
+    elif sort_option == "Price (Low-High)":
+        return df.sort_values(by='Sell Price', ascending=True)
+    elif sort_option == "Price (High-Low)":
+        return df.sort_values(by='Sell Price', ascending=False)
+    elif sort_option == "Stock (Low-High)":
+        return df.sort_values(by='Quantity', ascending=True)
+    elif sort_option == "Stock (High-Low)":
+        return df.sort_values(by='Quantity', ascending=False)
     return df
 
 def render_cards(df, columns_per_row, show_category, show_price, show_stock, show_barcode, color_option, image_fit, barcode_type):
@@ -186,7 +143,7 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                         """, unsafe_allow_html=True)
 
                     # 🔹 Display item name
-                    item_name = row.get('Item Name', 'Unknown Item')
+                    item_name = row.get('Item Name (English)', 'Unknown Item')
                     st.markdown(f"<div style='text-align:center; font-weight:700; font-size:18px;'>{item_name}</div>", unsafe_allow_html=True)
 
                     # 🔹 Display category
@@ -194,32 +151,18 @@ def render_cards(df, columns_per_row, show_category, show_price, show_stock, sho
                         category = row.get('Category', 'Uncategorized')
                         st.markdown(f"<div style='text-align:center; font-size:14px; color:gray;'>Category: {category}</div>", unsafe_allow_html=True)
                     
-                    # 🔹 Display price - handle multiple possible column names
-                    if show_price:
-                        price = None
-                        if 'Sale Price' in row and pd.notna(row['Sale Price']):
-                            price = row['Sale Price']
-                        elif 'Sell Price' in row and pd.notna(row['Sell Price']):
-                            price = row['Sell Price']
-                        elif 'Price' in row and pd.notna(row['Price']):
-                            price = row['Price']
-                        
-                        if price is not None:
-                            st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${price:.2f}</div>", unsafe_allow_html=True)
+                    # 🔹 Display price
+                    if show_price and 'Sell Price' in row and pd.notna(row['Sell Price']):
+                        price = row['Sell Price']
+                        st.markdown(f"<div style='text-align:center; font-weight:bold; color:{color_option}; font-size:16px;'>${price:.2f}</div>", unsafe_allow_html=True)
 
                     # 🔹 Display stock
-                    if show_stock:
-                        stock_qty = None
-                        if 'Quantity' in row and pd.notna(row['Quantity']):
-                            stock_qty = row['Quantity']
-                        elif 'Stock' in row and pd.notna(row['Stock']):
-                            stock_qty = row['Stock']
-                        
-                        if stock_qty is not None:
-                            badge_color, badge_label = get_stock_badge(stock_qty)
-                            st.markdown(
-                                f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
-                                unsafe_allow_html=True)
+                    if show_stock and 'Quantity' in row and pd.notna(row['Quantity']):
+                        stock_qty = row['Quantity']
+                        badge_color, badge_label = get_stock_badge(stock_qty)
+                        st.markdown(
+                            f"<div style='background-color:{badge_color}; color:white; text-align:center; padding:4px; border-radius:4px; font-size:12px;'>Stock: {stock_qty} ({badge_label})</div>", 
+                            unsafe_allow_html=True)
 
                     # 🔹 Display barcode
                     if show_barcode and 'Barcode' in df.columns and pd.notna(row.get('Barcode')):
