@@ -8,6 +8,7 @@ import preview.barcode_utils as barcode_utils
 import utils.pdf_export as pdf_export
 import base64
 import io
+from preview.pdf_Customization import pdf_customization_controls
 from PIL import Image
 
 def decode_base64_to_image(b64_data):
