@@ -1,13 +1,18 @@
 import streamlit as st
-import data
+import pandas as pd
+from config import HEADER_ALIASES
+from data import load_inventory_data
+
+H = HEADER_ALIASES["Inventory"]
 
 def statistics_module():
-    inventory_df = data.load_inventory()
-    total_items = len(inventory_df)
-    total_quantity = inventory_df["Quantity"].sum()
-    total_value = (inventory_df["Quantity"] * inventory_df["Sale Price"]).sum()
+    st.title("📊 Inventory Statistics")
+    df = load_inventory_data()
 
-    st.title("📦 Inventory Statistics")
-    st.write(f"Total Items: {total_items}")
-    st.write(f"Total Quantity: {total_quantity}")
-    st.write(f"Total Inventory Value: ${total_value:,.2f}")
+    st.metric("Total Items", len(df))
+
+    if H["brand"] in df.columns:
+        brand_counts = df[H["brand"]].value_counts()
+        st.bar_chart(brand_counts)
+    else:
+        st.warning("Brand column not found in dataset.")
