@@ -1,3 +1,4 @@
+# ✅ views/inventory_view.py
 import streamlit as st
 import pandas as pd
 import data
@@ -8,7 +9,7 @@ def inventory_view_module():
     st.title("📦 Inventory Management")
 
     col = H["Inventory"]
-    df = data.load_inventory()
+    df = data.load_inventory_data()
 
     # Clean Sell Price column
     df[col["price"]] = pd.to_numeric(df[col["price"]], errors='coerce').fillna(0)
