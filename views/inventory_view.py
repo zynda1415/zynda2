@@ -1,4 +1,3 @@
-# ✅ views/inventory_view.py
 import streamlit as st
 import pandas as pd
 import data
