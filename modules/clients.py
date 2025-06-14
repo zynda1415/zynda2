@@ -6,22 +6,20 @@ from data import load_clients_data, save_clients_data
 H = HEADER_ALIASES["Clients"]
 
 def render_client_section():
-    st.title("👥 Clients")
+    st.title("👥 Clients Management")
 
     df = load_clients_data()
 
-    if df.empty:
-        st.warning("No client data found.")
-        return
+    st.sidebar.header("🔍 Filter Clients")
+    client_types = ["All"] + sorted(df[H["type"]].dropna().unique())
+    selected_type = st.sidebar.selectbox("Client Type", client_types)
 
-    # === Filter
-    client_type = st.selectbox("Filter by Type", ["All"] + sorted(df[H["type"]].dropna().unique()))
-    if client_type != "All":
-        df = df[df[H["type"]] == client_type]
+    if selected_type != "All":
+        df = df[df[H["type"]] == selected_type]
 
+    st.write(f"### Total Clients: {len(df)}")
     st.dataframe(df)
 
-    # === Add New Client
     with st.expander("➕ Add New Client"):
         with st.form("add_client_form", clear_on_submit=True):
             client_id = st.text_input("Client ID")
