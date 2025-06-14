@@ -1,15 +1,14 @@
 import streamlit as st
-import data
-import pandas as pd
+from config import HEADER_ALIASES
+from data import load_clients_data
+
+H = HEADER_ALIASES["Clients"]
 
 def map_module():
-    st.header("📍 Client Map View")
+    st.title("📍 Client Map View")
+    df = load_clients_data()
 
-    clients_df = data.load_clients()
-
-    map_df = pd.DataFrame({
-        'lat': clients_df['Latitude'],
-        'lon': clients_df['Longitude']
-    })
-
-    st.map(map_df)
+    if "Latitude" in df.columns and "Longitude" in df.columns:
+        st.map(df[["Latitude", "Longitude"]].dropna())
+    else:
+        st.warning("Missing Latitude and Longitude columns.")
