@@ -1,6 +1,7 @@
 # app.py
 import streamlit as st
 
+# Import from folders
 from modules import item, clients, invoice, returns, purchase_history
 from views import catalog_view, mapview
 
@@ -18,7 +19,7 @@ tab = st.sidebar.radio("📁 Select Module", [
     "🗺️ Map View"
 ])
 
-# Route to module
+# Route to each module
 if tab == "📦 Inventory":
     item.inventory_module()
 
