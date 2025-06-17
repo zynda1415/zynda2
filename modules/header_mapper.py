@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from data import connect_sheet
+from data import connect_sheet  # ✅ use your secure function
 
 @st.cache_data(ttl=300)
 def get_header_map():
