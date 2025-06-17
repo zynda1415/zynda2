@@ -8,8 +8,13 @@ H = HEADER_ALIASES["Clients"]
 def render_client_section():
     st.title("👥 Clients Management")
 
-    df = load_clients_data()
+    try:
+        df = load_clients_data()
+    except Exception as e:
+        st.error(f"Failed to load client data: {e}")
+        return
 
+    # Sidebar filter
     st.sidebar.header("🔍 Filter Clients")
     client_types = ["All"] + sorted(df[H["type"]].dropna().unique())
     selected_type = st.sidebar.selectbox("Client Type", client_types)
@@ -20,6 +25,7 @@ def render_client_section():
     st.write(f"### Total Clients: {len(df)}")
     st.dataframe(df)
 
+    # Add client form
     with st.expander("➕ Add New Client"):
         with st.form("add_client_form", clear_on_submit=True):
             client_id = st.text_input("Client ID")
@@ -38,4 +44,4 @@ def render_client_section():
                 }
                 df = pd.concat([df, pd.DataFrame([new_client])], ignore_index=True)
                 save_clients_data(df)
-                st.success("Client added successfully.")
+                st.success("✅ Client added successfully!")
