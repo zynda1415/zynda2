@@ -1,46 +1,38 @@
 import streamlit as st
 import pandas as pd
-from config import HEADER_ALIASES
+from modules.header_mapper import get_headers
 from data import load_invoice_data, save_invoice_data
 
-H = HEADER_ALIASES["Invoices"]
+H = get_headers("Invoices")
 
 def render_invoice_section():
-    st.title("🧾 Invoices")
+    st.title("🧾 Invoice Manager")
 
-    df = load_invoice_data()
-
-    if df.empty:
-        st.warning("No invoice data found.")
+    try:
+        df = load_invoice_data()
+    except Exception as e:
+        st.error(f"Failed to load invoice data: {e}")
         return
 
-    # === Filters ===
-    col1, col2 = st.columns(2)
-    with col1:
-        client_filter = st.selectbox("Filter by Client", ["All"] + sorted(df[H["client"]].dropna().unique()))
-    with col2:
-        status_filter = st.selectbox("Filter by Status", ["All"] + sorted(df[H["status"]].dropna().unique()))
+    st.sidebar.header("🔍 Filter Invoices")
+    statuses = ["All"] + sorted(df[H["status"]].dropna().unique())
+    selected_status = st.sidebar.selectbox("Status", statuses)
 
-    filtered_df = df.copy()
+    if selected_status != "All":
+        df = df[df[H["status"]] == selected_status]
 
-    if client_filter != "All":
-        filtered_df = filtered_df[filtered_df[H["client"]] == client_filter]
-    if status_filter != "All":
-        filtered_df = filtered_df[filtered_df[H["status"]] == status_filter]
+    st.write(f"### Total Invoices: {len(df)}")
+    st.dataframe(df)
 
-    st.dataframe(filtered_df)
-
-    with st.expander("➕ Add New Invoice"):
+    with st.expander("➕ Create New Invoice"):
         with st.form("invoice_form", clear_on_submit=True):
-            invoice_id = st.text_input("Invoice ID")
             client = st.text_input("Client Name")
-            amount = st.number_input("Amount", min_value=0.0, step=1.0)
+            amount = st.number_input("Amount", min_value=0.0, step=0.1)
             due_date = st.date_input("Due Date")
             status = st.selectbox("Status", ["Pending", "Paid", "Overdue"])
 
             if st.form_submit_button("✅ Save Invoice"):
                 new_invoice = {
-                    H["invoice_id"]: invoice_id,
                     H["client"]: client,
                     H["amount"]: amount,
                     H["due"]: due_date.strftime("%Y-%m-%d"),
@@ -48,4 +40,4 @@ def render_invoice_section():
                 }
                 df = pd.concat([df, pd.DataFrame([new_invoice])], ignore_index=True)
                 save_invoice_data(df)
-                st.success("Invoice saved successfully.")
+                st.success("✅ Invoice added successfully!")
