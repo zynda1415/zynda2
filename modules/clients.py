@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-from config import HEADER_ALIASES
+from modules.header_mapper import get_headers
 from data import load_clients_data, save_clients_data
 
-H = HEADER_ALIASES["Clients"]
+H = get_headers("Clients")
 
 def render_client_section():
     st.title("👥 Clients Management")
@@ -14,7 +14,7 @@ def render_client_section():
         st.error(f"Failed to load client data: {e}")
         return
 
-    # Sidebar filter
+    # Sidebar filters
     st.sidebar.header("🔍 Filter Clients")
     client_types = ["All"] + sorted(df[H["type"]].dropna().unique())
     selected_type = st.sidebar.selectbox("Client Type", client_types)
@@ -25,7 +25,7 @@ def render_client_section():
     st.write(f"### Total Clients: {len(df)}")
     st.dataframe(df)
 
-    # Add client form
+    # Add new client form
     with st.expander("➕ Add New Client"):
         with st.form("add_client_form", clear_on_submit=True):
             client_id = st.text_input("Client ID")
