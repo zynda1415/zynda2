@@ -4,21 +4,16 @@ from barcode.writer import ImageWriter
 import io
 from PIL import Image
 
-def generate_barcode_image(barcode_data, barcode_type='Code128'):
-    if not barcode_data:
+def generate_barcode_image(data, barcode_type='Code128'):
+    if not data:
         return None
     try:
         writer = ImageWriter()
-        barcode_cls = {
-            "EAN13": EAN13,
-            "EAN8": EAN8,
-            "UPCA": UPCA
-        }.get(barcode_type, Code128)
-
-        barcode = barcode_cls(barcode_data, writer=writer)
-        barcode_io = io.BytesIO()
-        barcode.write(barcode_io)
-        barcode_io.seek(0)
-        return Image.open(barcode_io)
-    except Exception as e:
+        cls = {'EAN13': EAN13, 'EAN8': EAN8, 'UPCA': UPCA}.get(barcode_type, Code128)
+        barcode = cls(data, writer=writer)
+        buffer = io.BytesIO()
+        barcode.write(buffer)
+        buffer.seek(0)
+        return Image.open(buffer)
+    except Exception:
         return None
