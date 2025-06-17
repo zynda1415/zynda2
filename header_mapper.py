@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 from google.oauth2.service_account import Credentials
 
-SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
+SPREADSHEET_ID = "1XbtuO9E-cmckDQcqCIPuytpr-RrB-XKLUinXZqWR0Wc"
 SHEET_NAME = "SheetConfig"
 
 def get_credentials():
