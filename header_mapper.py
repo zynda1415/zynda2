@@ -6,6 +6,7 @@ import streamlit as st
 from google.oauth2.service_account import Credentials
 
 SPREADSHEET_ID = "1XbtuO9E-cmckDQcqCIPuytpr-RrB-XKLUinXZqWR0Wc"
+st.warning(f"Using spreadsheet: {SPREADSHEET_ID}")
 SHEET_NAME = "SheetConfig"
 
 def get_credentials():
