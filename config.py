@@ -24,7 +24,9 @@ HEADER_ALIASES = {
         "name": "Name",
         "phone": "Phone",
         "address": "Address",
-        "type": "Type"
+        "type": "Type",
+        "latitude": "Latitude",
+        "longitude": "Longitude"
     },
     "Invoices": {
         "invoice_id": "Invoice ID",
@@ -33,4 +35,11 @@ HEADER_ALIASES = {
         "due": "Due Date",
         "status": "Status"
     }
+}
+
+SHEET_NAMES = {
+    "inventory": "Inventory2",
+    "clients": "Clients",
+    "invoices": "Invoices",
+    "sales": "Sales"
 }
