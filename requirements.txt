@@ -8,4 +8,7 @@ fpdf2
 python-barcode
 python-barcode[images]
 streamlit-option-menu
-pygsheets
+gspread
+google-auth
+oauth2client
+
