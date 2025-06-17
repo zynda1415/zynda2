@@ -3,7 +3,6 @@ import streamlit as st
 from PIL import Image
 import requests
 import io
-
 from header_mapper import load_header_map
 from utils.gsheet import load_sheet
 from utils import barcode_utils, pdf_export
@@ -25,27 +24,17 @@ def catalog_module():
     for i, (_, row) in enumerate(df.iterrows()):
         with cols[i % 3]:
             st.subheader(row[headers["name"]])
-
-            # 🔁 Image rendering
-            image_url = row.get(headers["image"], "")
             try:
-                if image_url:
-                    img = Image.open(requests.get(image_url, stream=True).raw)
-                    st.image(img, use_container_width=True)
-                else:
-                    st.image("https://via.placeholder.com/150", use_container_width=True)
+                img = Image.open(requests.get(row[headers["image"]], stream=True).raw)
+                st.image(img, use_column_width=True)
             except:
-                st.image("https://via.placeholder.com/150", use_container_width=True)
-
-            # 💰 Price
+                st.image("https://via.placeholder.com/150", use_column_width=True)
             st.write(f"💵 {row[headers['sell_price']]}")
             st.write(f"📦 Stock: {row[headers['quantity']]}")
-
-            # 🧾 Barcode
             barcode_img = barcode_utils.generate_barcode_image(str(row[headers["barcode"]]))
             if barcode_img:
-                st.image(barcode_img, caption="Barcode", use_container_width=False)
+                st.image(barcode_img, caption="Barcode")
 
-    if st.button("📄 Export to PDF"):
+    if st.button("📥 Export to PDF"):
         pdf_bytes, filename = pdf_export.generate_catalog_pdf_visual(df, headers)
         st.download_button("Download PDF", data=pdf_bytes, file_name=filename)
