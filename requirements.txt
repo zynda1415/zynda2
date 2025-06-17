@@ -1,0 +1,10 @@
+streamlit
+pandas
+gspread
+oauth2client
+google-auth
+fpdf2
+pillow
+python-barcode[images]
+pydeck
+requests
