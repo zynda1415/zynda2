@@ -8,6 +8,4 @@ fpdf2
 python-barcode
 python-barcode[images]
 streamlit-option-menu
-
-# ✅ FIXES _auth_request ERROR
 pygsheets
