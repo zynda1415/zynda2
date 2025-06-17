@@ -2,13 +2,13 @@
 import gspread
 import json
 import pandas as pd
+import streamlit as st
 from google.oauth2.service_account import Credentials
 
 SPREADSHEET_ID = "1hwVsrPQjJdv9c4GyI_QzujLzG3dImlUHxmOUbUdjY7M"
 
 def get_credentials():
-    with open("zyndasys1-2.json") as f:
-        creds_dict = json.load(f)
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
     return Credentials.from_service_account_info(creds_dict, scopes=scope)
 
