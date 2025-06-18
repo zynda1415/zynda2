@@ -44,7 +44,7 @@ class HeaderMapper:
                 "item_name": "Item Name",
                 "quantity": "Quantity",
                 "unit_price": "Unit Price",
-                "total_price": "Total_Price", # Corrected from original thought if it was wrong
+                "total_price": "Total_Price",
                 "free_quantity": "Free Quantity"
             },
             "returns": {
