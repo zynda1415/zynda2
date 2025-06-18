@@ -34,21 +34,22 @@ def add_inventory_item(gspread_client, spreadsheet_url, new_item_data, mappings)
     new_item_data is a dictionary with logical keys and their values.
     """
     st.subheader("Add New Item")
-    with st.form("add_item_form"):
+    with st.form("add_item_form"): # This form has a unique key
         # Create input fields using logical keys but display them nicely
-        item_name = st.text_input(f"{mappings['inventory']['item_name'].replace('_', ' ').title()}")
-        barcode = st.text_input(f"{mappings['inventory']['barcode'].replace('_', ' ').title()}")
-        category = st.text_input(f"{mappings['inventory']['category'].replace('_', ' ').title()}")
-        quantity = st.number_input(f"{mappings['inventory']['quantity'].replace('_', ' ').title()}", min_value=0, value=0)
-        sell_price = st.number_input(f"{mappings['inventory']['sell_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0)
-        wholesale_price = st.number_input(f"{mappings['inventory']['wholesale_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0)
-        last_purchase_price = st.number_input(f"{mappings['inventory']['last_purchase_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0)
-        last_purchase_date = st.date_input(f"{mappings['inventory']['last_purchase_date'].replace('_', ' ').title()}")
-        expiry_date = st.date_input(f"{mappings['inventory']['expiry_date'].replace('_', ' ').title()}")
-        supplier = st.text_input(f"{mappings['inventory']['supplier'].replace('_', ' ').title()}")
-        image_url = st.text_input(f"{mappings['inventory']['image_url'].replace('_', ' ').title()}")
-        notes = st.text_area(f"{mappings['inventory']['notes'].replace('_', ' ').title()}")
-        free_quantity = st.number_input(f"{mappings['inventory']['free_quantity'].replace('_', ' ').title()}", min_value=0, value=0)
+        # ADD UNIQUE 'key' ARGUMENT TO EACH INPUT WIDGET
+        item_name = st.text_input(f"{mappings['inventory']['item_name'].replace('_', ' ').title()}", key="add_item_name")
+        barcode = st.text_input(f"{mappings['inventory']['barcode'].replace('_', ' ').title()}", key="add_item_barcode")
+        category = st.text_input(f"{mappings['inventory']['category'].replace('_', ' ').title()}", key="add_item_category")
+        quantity = st.number_input(f"{mappings['inventory']['quantity'].replace('_', ' ').title()}", min_value=0, value=0, key="add_item_quantity")
+        sell_price = st.number_input(f"{mappings['inventory']['sell_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0, key="add_item_sell_price")
+        wholesale_price = st.number_input(f"{mappings['inventory']['wholesale_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0, key="add_item_wholesale_price")
+        last_purchase_price = st.number_input(f"{mappings['inventory']['last_purchase_price'].replace('_', ' ').title()}", min_value=0.0, value=0.0, key="add_item_last_purchase_price")
+        last_purchase_date = st.date_input(f"{mappings['inventory']['last_purchase_date'].replace('_', ' ').title()}", key="add_item_last_purchase_date")
+        expiry_date = st.date_input(f"{mappings['inventory']['expiry_date'].replace('_', ' ').title()}", key="add_item_expiry_date")
+        supplier = st.text_input(f"{mappings['inventory']['supplier'].replace('_', ' ').title()}", key="add_item_supplier")
+        image_url = st.text_input(f"{mappings['inventory']['image_url'].replace('_', ' ').title()}", key="add_item_image_url")
+        notes = st.text_area(f"{mappings['inventory']['notes'].replace('_', ' ').title()}", key="add_item_notes")
+        free_quantity = st.number_input(f"{mappings['inventory']['free_quantity'].replace('_', ' ').title()}", min_value=0, value=0, key="add_item_free_quantity")
 
         submitted = st.form_submit_button("Add Item")
         if submitted:
