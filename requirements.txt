@@ -1,0 +1,13 @@
+fpdf2
+plotly
+altair
+streamlit
+pandas
+gspread
+google-auth
+google-auth-oauthlib
+streamlit-option-menu
+python-barcode
+pillow
+qrcode
+python-barcode[images]
